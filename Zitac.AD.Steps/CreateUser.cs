@@ -48,7 +48,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-        [PropertyClassification(10, "Add Additional Attributes", new string[] { "Additional Attributes" })]
+        [PropertyClassification(10, "Attributes", new string[] { "Additional Attributes" })]
         public string[] Attributes
         {
             get
@@ -76,13 +76,15 @@ namespace Zitac.AD.Steps
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU (DN)"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
+                
 
                 if (this.Attributes != null && this.Attributes.Length != 0)
                 {
                     foreach (string CurrParameter in this.Attributes)
                     {
-                        dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter));
+                        dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter){
+                            Categories = new string[1] {"hej"}
+                        });
                     }
                 }
 
