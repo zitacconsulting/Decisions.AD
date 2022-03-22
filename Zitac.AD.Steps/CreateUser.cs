@@ -76,14 +76,23 @@ namespace Zitac.AD.Steps
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU (DN)"));
-                
 
+                // User Data
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") {Categories = new string[] { "User Data" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "sAMAccountName") {Categories = new string[] { "User Data" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") {Categories = new string[] { "User Data" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") {Categories = new string[] { "User Data" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Password") {Categories = new string[] { "User Data" }, EditorAttribute = (PropertyEditorAttribute) new PasswordTextAttribute()});
+
+
+                //Additional Attributes
                 if (this.Attributes != null && this.Attributes.Length != 0)
                 {
                     foreach (string CurrParameter in this.Attributes)
                     {
-                        dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter){
-                            Categories = new string[] {"Additional Attributes Input"}
+                        dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter)
+                        {
+                            Categories = new string[] { "Additional Attributes Input" }
                         });
                     }
                 }
