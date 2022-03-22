@@ -96,7 +96,7 @@ namespace Zitac.AD.Steps
             get
             {
                 IInputMapping[] inputMappingArray = new IInputMapping[2];
-                inputMappingArray[0] = (IInputMapping) new IgnoreInputMapping() { InputDataName = "Search Base" };
+                inputMappingArray[0] = (IInputMapping) new IgnoreInputMapping() { InputDataName = "Search Base (DN)" };
                 inputMappingArray[1] = (IInputMapping) new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
                 return inputMappingArray;
             }
@@ -126,7 +126,7 @@ namespace Zitac.AD.Steps
                             }
                             
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Search Base"));
+                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Search Base (DN)"));
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Additional Attributes", true, true, true));
 
                             SearchParameters[] ParametersList = this.GetSearchParameters();
@@ -159,7 +159,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string BaseSearch = data.Data["Search Base"] as string;
+            string BaseSearch = data.Data["Search Base (DN)"] as string;
             string UserName = data.Data["User Name"] as string;
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
