@@ -22,7 +22,7 @@ using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
 namespace Zitac.AD.Steps
 {
-    [AutoRegisterStep("Search User", "Integration", "Active Directory", "Zitac", "User")]
+    [AutoRegisterStep("Create User", "Integration", "Active Directory", "Zitac", "User")]
     [Writable]
 
     public class CreateUser : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, INotifyPropertyChanged//, IDefaultInputMappingStep
