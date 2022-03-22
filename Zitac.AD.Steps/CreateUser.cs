@@ -162,10 +162,11 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
-                childEntry.Properties["unicodePwd"].Value = Encoding.Unicode.GetBytes(Passwd);
                 childEntry.CommitChanges();
                 ouEntry.CommitChanges();
 
+                    childEntry.Invoke("SetPassword", new object[] { Passwd });
+                    childEntry.CommitChanges();
 
                 return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"].ToString()}});
 
