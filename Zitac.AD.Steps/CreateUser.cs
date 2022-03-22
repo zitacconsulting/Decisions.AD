@@ -83,7 +83,7 @@ namespace Zitac.AD.Steps
                     foreach (string CurrParameter in this.Attributes)
                     {
                         dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter){
-                            Categories = new string[1] {"hej"}
+                            Categories = new string[] {"Additional Attributes Input"}
                         });
                     }
                 }
