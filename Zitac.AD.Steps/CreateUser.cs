@@ -79,7 +79,7 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU (DN)"));
 
                 // User Data
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" }, EditorAttribute = (PropertyEditorAttribute)new SelectStringEditorAttribute((new string[] "Enabled", "Disabled"))});
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Cannot Change Password") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
@@ -129,12 +129,16 @@ namespace Zitac.AD.Steps
             string sAMAccountName = data.Data["sAMAccountName"] as string;
             string Passwd = data.Data["Password"] as string;
 
-            string AccountDisabled = data.Data["Account Disabled"] as string;
+            if((bool)data.Data["Account Disabled"] != null)
+            {
+                bool AccountDisabled = (bool)data.Data["Account Disabled"];
+            }
+            else{
+                bool AccountDisabled = false;
+            }
 
 
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
-
-            string Filter = string.Empty;
 
             string[] ParametersList = this.Attributes;
             if (ParametersList != null && ParametersList.Length != 0)
@@ -168,22 +172,40 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
+
+                if(AccountDisabled != null && AccountDisabled) {
+                    //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
+                                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) "True"
+                }
+                });
+                }
+                else if(AccountDisabled != null && !AccountDisabled)
+                {
+                    //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
+                                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) "False"
+                }
+                });
+                }
+
+
                 childEntry.CommitChanges();
                 ouEntry.CommitChanges();
 
                 childEntry.Invoke("SetPassword", new object[] { Passwd });
 
-                int val = (int)childEntry.Properties["userAccountControl"].Value;
-                if(AccountDisabled == "true") {
-                    childEntry.Properties["userAccountControl"].Value = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
-                }
-                else if(AccountDisabled == "false")
-                {
-                    childEntry.Properties["userAccountControl"].Value = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
-                }
+
                 childEntry.CommitChanges();
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+                //return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)AccountDisabled } });
 
 
 
