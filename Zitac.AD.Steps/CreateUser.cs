@@ -167,7 +167,7 @@ namespace Zitac.AD.Steps
                 ouEntry.CommitChanges();
 
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"] }});
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"].ToString()}});
 
 
 
