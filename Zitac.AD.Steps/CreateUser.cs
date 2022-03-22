@@ -20,6 +20,7 @@ using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
+using System.Text;
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Create User", "Integration", "Active Directory", "Zitac", "User")]
@@ -107,7 +108,7 @@ namespace Zitac.AD.Steps
             {
                 List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
 
-                outcomeScenarioDataList.Add(new OutcomeScenarioData("Done"));
+                outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(string), "DN")));
                 outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
                 return outcomeScenarioDataList.ToArray();
             }
@@ -117,8 +118,14 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string BaseSearch = data.Data["OU (DN)"] as string;
-            string UserName = data.Data["User Name"] as string;
+            string OU = data.Data["OU (DN)"] as string;
+            
+            string FirstName = data.Data["First Name"] as string;
+            string LastName = data.Data["Last Name"] as string;
+            string sAMAccountName = data.Data["sAMAccountName"] as string;
+            string Passwd = data.Data["Password"] as string;
+
+
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
             string Filter = string.Empty;
@@ -145,42 +152,22 @@ namespace Zitac.AD.Steps
 
             try
             {
-                string baseLdapPath = string.Empty;
-                string str = string.Empty;
-                if ((BaseSearch == null) || (BaseSearch == string.Empty))
-                {
-                    baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
-                }
-                else
-                {
-                    baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)BaseSearch);
-                }
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=user)(objectCategory=person)" + Filter + ")";
-
-                SearchResultCollection All = directorySearcher.FindAll();
-
-                if (searchRoot != null)
-                {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
-                }
-                directorySearcher.Dispose();
-
-                List<User> Results = new List<User>();
-                if (All != null && All.Count != 0)
-                {
-                    foreach (SearchResult Current in All)
-                    {
-                        Results.Add(new User(Current, AdditionalAttributes));
-                    }
-                }
 
 
-                Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("FoundUsers", (object)Results.ToArray());
-                return new ResultData("Done", (IDictionary<string, object>)dictionary);
+                string baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)OU);
+
+                DirectoryEntry ouEntry = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
+
+                DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + FirstName + " " + LastName, "user");
+                childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
+                childEntry.Properties["givenName"].Value = FirstName;
+                childEntry.Properties["sn"].Value = LastName;
+                childEntry.Properties["unicodePwd"].Value = Encoding.Unicode.GetBytes(Passwd);
+                childEntry.CommitChanges();
+                ouEntry.CommitChanges();
+
+
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"] }});
 
 
 
