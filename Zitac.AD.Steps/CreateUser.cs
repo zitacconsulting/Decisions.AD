@@ -79,7 +79,11 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU (DN)"));
 
                 // User Data
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") {Categories = new string[] { "User Data" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") {Categories = new string[] { "User Data", "Flags" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Password Never Expires") {Categories = new string[] { "User Data", "Flags" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Cannot Change Password") {Categories = new string[] { "User Data", "Flags" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Must Change Password On Next Login") {Categories = new string[] { "User Data", "Flags" }});
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Normal User") {Categories = new string[] { "User Data", "Flags" }});
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "sAMAccountName") {Categories = new string[] { "User Data" }});
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") {Categories = new string[] { "User Data" }});
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") {Categories = new string[] { "User Data" }});
@@ -168,7 +172,7 @@ namespace Zitac.AD.Steps
                     childEntry.Invoke("SetPassword", new object[] { Passwd });
                     childEntry.CommitChanges();
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"].ToString()}});
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string,object>(){{"DN",(object) childEntry.Properties["distinguishedName"].Value}});
 
 
 
