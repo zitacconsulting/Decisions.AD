@@ -203,12 +203,20 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
-                if(UserAccessControl != 0){ childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
                 childEntry.CommitChanges();
                 ouEntry.CommitChanges();
-
                 childEntry.Invoke("SetPassword", new object[] { Passwd });
                 childEntry.CommitChanges();
+                if(UserAccessControl != 0){ childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
+                if(data.Data["Initials"] != null){ childEntry.Properties["initials"].Value = (string)data.Data["Initials"];}
+                if(data.Data["Display Name"] != null){ childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"];}
+                if(data.Data["Office"] != null){ childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"];}
+                if(data.Data["Telephone Number"] != null){ childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"];}
+                if(data.Data["Description"] != null){ childEntry.Properties["description"].Value = (string)data.Data["Description"];}
+                if(data.Data["Email Address"] != null){ childEntry.Properties["mail"].Value = (string)data.Data["Email Address"];}
+                if(data.Data["Web Page"] != null){ childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"];}
+                if(data.Data["Account Expires"] != null){ childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc());}
+
                 if((bool?)data.Data["Must Change Password On Next Login"] == true) {childEntry.Properties["pwdLastSet"].Value = 0;}
                 childEntry.CommitChanges();
 
