@@ -129,7 +129,17 @@ namespace Zitac.AD.Steps
             string sAMAccountName = data.Data["sAMAccountName"] as string;
             string Passwd = data.Data["Password"] as string;
 
+            int UserAccessControl = 0;
             bool? AccountDisabled = data.Data["Account Disabled"] as bool?;
+                if(AccountDisabled == true) {
+                    UserAccessControl = UserAccessControl | 0x2;
+
+                }
+                else if(AccountDisabled == false)
+                {
+                    UserAccessControl = UserAccessControl & ~0x2;
+
+                }
 
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
@@ -165,15 +175,9 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
-
-                if(AccountDisabled == true) {
-                    childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
-
-                }
-                else if(AccountDisabled == false)
+                if(UserAccessControl != 0)
                 {
-                    childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
-
+                    childEntry.Properties["userAccountControluserAccountControl"].Value = UserAccessControl;
                 }
 
 
@@ -185,8 +189,7 @@ namespace Zitac.AD.Steps
 
                 childEntry.CommitChanges();
 
-                //return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)AccountDisabled } });
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
 
 
 
