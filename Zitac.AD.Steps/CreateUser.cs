@@ -82,7 +82,8 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "sAMAccountName") { Categories = new string[] { "User Data" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name (Pre-Win 2000)") { Categories = new string[] { "User Data" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Initials") { Categories = new string[] { "User Data" } });
@@ -116,9 +117,9 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Manager (DN)") { Categories = new string[] { "User Data", "Organization" } });
 
 
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee ID") { Categories = new string[] { "User Data", "Employee" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee Number") { Categories = new string[] { "User Data", "Employee" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee Type") { Categories = new string[] { "User Data", "Employee" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Employee ID") { Categories = new string[] { "User Data", "Employee" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Employee Number") { Categories = new string[] { "User Data", "Employee" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Employee Type") { Categories = new string[] { "User Data", "Employee" } });
 
 
 
@@ -161,7 +162,8 @@ namespace Zitac.AD.Steps
 
             string FirstName = data.Data["First Name"] as string;
             string LastName = data.Data["Last Name"] as string;
-            string sAMAccountName = data.Data["sAMAccountName"] as string;
+            string sAMAccountName = data.Data["Login Name (Pre-Win 2000)"] as string;
+            string LoginName = data.Data["Login Name"] as string;
             string Passwd = data.Data["Password"] as string;
 
             int UserAccessControl = 512;
@@ -193,6 +195,7 @@ namespace Zitac.AD.Steps
 
                 DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + FirstName + " " + LastName, "user");
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
+                childEntry.Properties["userPrincipalName"].Value = LoginName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
                 childEntry.CommitChanges();
@@ -227,9 +230,9 @@ namespace Zitac.AD.Steps
                 if (data.Data["Company"] != null) { childEntry.Properties["company"].Value = (string)data.Data["Company"]; }
                 if (data.Data["Manager (DN)"] != null) { childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"]; }
 
-                if (data.Data["Empolyee ID"] != null) { childEntry.Properties["employeeID"].Value = (string)data.Data["Empolyee ID"]; }
-                if (data.Data["Empolyee Number"] != null) { childEntry.Properties["employeeNumber"].Value = (string)data.Data["Empolyee Number"]; }
-                if (data.Data["Empolyee Type"] != null) { childEntry.Properties["employeeType"].Value = (string)data.Data["Empolyee Type"]; }
+                if (data.Data["Employee ID"] != null) { childEntry.Properties["employeeID"].Value = (string)data.Data["Employee ID"]; }
+                if (data.Data["Employee Number"] != null) { childEntry.Properties["employeeNumber"].Value = (string)data.Data["Employee Number"]; }
+                if (data.Data["Employee Type"] != null) { childEntry.Properties["employeeType"].Value = (string)data.Data["Employee Type"]; }
 
 
                 if ((bool?)data.Data["Must Change Password On Next Login"] == true) { childEntry.Properties["pwdLastSet"].Value = 0; }
