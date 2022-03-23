@@ -81,9 +81,7 @@ namespace Zitac.AD.Steps
                 // User Data
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Cannot Change Password") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Normal User") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "sAMAccountName") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") { Categories = new string[] { "User Data" } });
@@ -129,17 +127,10 @@ namespace Zitac.AD.Steps
             string sAMAccountName = data.Data["sAMAccountName"] as string;
             string Passwd = data.Data["Password"] as string;
 
-            int UserAccessControl = 0;
-            bool? AccountDisabled = data.Data["Account Disabled"] as bool?;
-                if(AccountDisabled == true) {
-                    UserAccessControl = UserAccessControl | 0x2;
+            int UserAccessControl = 512;
+                if((bool?)data.Data["Account Disabled"] == true) {UserAccessControl = UserAccessControl | 0x2;}
+                if((bool?)data.Data["Password Never Expires"] == true) {UserAccessControl = UserAccessControl | 0x10000;}
 
-                }
-                else if(AccountDisabled == false)
-                {
-                    UserAccessControl = UserAccessControl & ~0x2;
-
-                }
 
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
@@ -175,21 +166,17 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
-                if(UserAccessControl != 0)
-                {
-                    childEntry.Properties["userAccountControluserAccountControl"].Value = UserAccessControl;
-                }
-
-
+                if(UserAccessControl != 0){ childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
                 childEntry.CommitChanges();
                 ouEntry.CommitChanges();
 
                 childEntry.Invoke("SetPassword", new object[] { Passwd });
-
-
+                childEntry.CommitChanges();
+                if((bool?)data.Data["Must Change Password On Next Login"] == true) {childEntry.Properties["pwdLastSet"].Value = 0;}
                 childEntry.CommitChanges();
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+                //return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)UserAccessControl } });
 
 
 
