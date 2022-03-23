@@ -93,18 +93,17 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Description") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Email Address") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Web Page") { Categories = new string[] { "User Data" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Office") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), "Account Expires") { Categories = new string[] { "User Data" } });
               
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Street") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "PO Box") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "City") { Categories = new string[] { "User Data", "Address" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Street") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "State/Province") { Categories = new string[] { "User Data", "Address" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Zit/Postal Code") { Categories = new string[] { "User Data", "Address" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Zip/Postal Code") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Country/Region") { Categories = new string[] { "User Data", "Address" } });
                 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Home Folder") { Categories = new string[] { "User Data", "Profile" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Home Folder Drive Letter") { Categories = new string[] { "User Data", "Profile" } });
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Home Phone") { Categories = new string[] { "User Data", "Telephones" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Mobile Phone") { Categories = new string[] { "User Data", "Telephones" } });
@@ -216,6 +215,29 @@ namespace Zitac.AD.Steps
                 if(data.Data["Email Address"] != null){ childEntry.Properties["mail"].Value = (string)data.Data["Email Address"];}
                 if(data.Data["Web Page"] != null){ childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"];}
                 if(data.Data["Account Expires"] != null){ childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc());}
+
+                if(data.Data["Street"] != null){ childEntry.Properties["streetAddress"].Value = (string)data.Data["Street"];}
+                if(data.Data["PO Box"] != null){ childEntry.Properties["postOfficeBox"].Value = (string)data.Data["PO Box"];}
+                if(data.Data["City"] != null){ childEntry.Properties["l"].Value = (string)data.Data["City"];}
+                if(data.Data["State/Province"] != null){ childEntry.Properties["st"].Value = (string)data.Data["State/Province"];}
+                if(data.Data["Zip/Postal Code"] != null){ childEntry.Properties["postalCode"].Value = (string)data.Data["Zip/Postal Code"];}
+                if(data.Data["Country/Region"] != null){ childEntry.Properties["c"].Value = (string)data.Data["Country/Region"];}
+                
+                if(data.Data["Home Folder"] != null){ childEntry.Properties["homeDirectory"].Value = (string)data.Data["Home Folder"];}
+                if(data.Data["Home Folder Drive Letter"] != null){ childEntry.Properties["homeDrive"].Value = (string)data.Data["Home Folder Drive Letter"];}
+
+                if(data.Data["Home Phone"] != null){ childEntry.Properties["homePhone"].Value = (string)data.Data["Home Phone"];}
+                if(data.Data["Mobile Phone"] != null){ childEntry.Properties["mobile"].Value = (string)data.Data["Mobile Phone"];}
+
+                if(data.Data["Department"] != null){ childEntry.Properties["department"].Value = (string)data.Data["Department"];}
+                if(data.Data["Job title"] != null){ childEntry.Properties["title"].Value = (string)data.Data["Job title"];}
+                if(data.Data["Company"] != null){ childEntry.Properties["company"].Value = (string)data.Data["Company"];}
+                if(data.Data["Manager (DN)"] != null){ childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"];}
+
+                if(data.Data["Empolyee ID"] != null){ childEntry.Properties["employeeID"].Value = (string)data.Data["Empolyee ID"];}
+                if(data.Data["Empolyee Number"] != null){ childEntry.Properties["employeeNumber"].Value = (string)data.Data["Empolyee Number"];}
+                if(data.Data["Empolyee Type"] != null){ childEntry.Properties["employeeType"].Value = (string)data.Data["Empolyee Type"];}
+
 
                 if((bool?)data.Data["Must Change Password On Next Login"] == true) {childEntry.Properties["pwdLastSet"].Value = 0;}
                 childEntry.CommitChanges();
