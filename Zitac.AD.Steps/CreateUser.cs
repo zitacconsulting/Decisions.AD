@@ -34,7 +34,7 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private string[] attributes;
 
-        [PropertyClassification(8, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
+        [PropertyClassification(2, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -94,14 +94,14 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Email Address") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Web Page") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), "Account Expires") { Categories = new string[] { "User Data" } });
-              
+
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Street") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "PO Box") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "City") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "State/Province") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Zip/Postal Code") { Categories = new string[] { "User Data", "Address" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Country/Region") { Categories = new string[] { "User Data", "Address" } });
-                
+
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Home Folder") { Categories = new string[] { "User Data", "Profile" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Home Folder Drive Letter") { Categories = new string[] { "User Data", "Profile" } });
 
@@ -119,9 +119,9 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee ID") { Categories = new string[] { "User Data", "Employee" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee Number") { Categories = new string[] { "User Data", "Employee" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Empolyee Type") { Categories = new string[] { "User Data", "Employee" } });
-                
-                
-                
+
+
+
 
 
                 //Additional Attributes
@@ -131,7 +131,8 @@ namespace Zitac.AD.Steps
                     {
                         dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter)
                         {
-                            Categories = new string[] { "Additional Attributes Input" }
+                            Categories = new string[] { "Additional Attributes Input" },
+                            SortIndex = 3
                         });
                     }
                 }
@@ -164,17 +165,9 @@ namespace Zitac.AD.Steps
             string Passwd = data.Data["Password"] as string;
 
             int UserAccessControl = 512;
-                if((bool?)data.Data["Account Disabled"] == true) {UserAccessControl = UserAccessControl | 0x2;}
-                if((bool?)data.Data["Password Never Expires"] == true) {UserAccessControl = UserAccessControl | 0x10000;}
+            if ((bool?)data.Data["Account Disabled"] == true) { UserAccessControl = UserAccessControl | 0x2; }
+            if ((bool?)data.Data["Password Never Expires"] == true) { UserAccessControl = UserAccessControl | 0x10000; }
 
-
-            string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
-
-            string[] ParametersList = this.Attributes;
-            if (ParametersList != null && ParametersList.Length != 0)
-            {
-
-            }
 
             Credentials ADCredentials = new Credentials();
 
@@ -206,44 +199,54 @@ namespace Zitac.AD.Steps
                 ouEntry.CommitChanges();
                 childEntry.Invoke("SetPassword", new object[] { Passwd });
                 childEntry.CommitChanges();
-                if(UserAccessControl != 0){ childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
-                if(data.Data["Initials"] != null){ childEntry.Properties["initials"].Value = (string)data.Data["Initials"];}
-                if(data.Data["Display Name"] != null){ childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"];}
-                if(data.Data["Office"] != null){ childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"];}
-                if(data.Data["Telephone Number"] != null){ childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"];}
-                if(data.Data["Description"] != null){ childEntry.Properties["description"].Value = (string)data.Data["Description"];}
-                if(data.Data["Email Address"] != null){ childEntry.Properties["mail"].Value = (string)data.Data["Email Address"];}
-                if(data.Data["Web Page"] != null){ childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"];}
-                if(data.Data["Account Expires"] != null){ childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc());}
+                if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
+                if (data.Data["Initials"] != null) { childEntry.Properties["initials"].Value = (string)data.Data["Initials"]; }
+                if (data.Data["Display Name"] != null) { childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"]; }
+                if (data.Data["Office"] != null) { childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"]; }
+                if (data.Data["Telephone Number"] != null) { childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"]; }
+                if (data.Data["Description"] != null) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
+                if (data.Data["Email Address"] != null) { childEntry.Properties["mail"].Value = (string)data.Data["Email Address"]; }
+                if (data.Data["Web Page"] != null) { childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"]; }
+                if (data.Data["Account Expires"] != null) { childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc()); }
 
-                if(data.Data["Street"] != null){ childEntry.Properties["streetAddress"].Value = (string)data.Data["Street"];}
-                if(data.Data["PO Box"] != null){ childEntry.Properties["postOfficeBox"].Value = (string)data.Data["PO Box"];}
-                if(data.Data["City"] != null){ childEntry.Properties["l"].Value = (string)data.Data["City"];}
-                if(data.Data["State/Province"] != null){ childEntry.Properties["st"].Value = (string)data.Data["State/Province"];}
-                if(data.Data["Zip/Postal Code"] != null){ childEntry.Properties["postalCode"].Value = (string)data.Data["Zip/Postal Code"];}
-                if(data.Data["Country/Region"] != null){ childEntry.Properties["c"].Value = (string)data.Data["Country/Region"];}
-                
-                if(data.Data["Home Folder"] != null){ childEntry.Properties["homeDirectory"].Value = (string)data.Data["Home Folder"];}
-                if(data.Data["Home Folder Drive Letter"] != null){ childEntry.Properties["homeDrive"].Value = (string)data.Data["Home Folder Drive Letter"];}
+                if (data.Data["Street"] != null) { childEntry.Properties["streetAddress"].Value = (string)data.Data["Street"]; }
+                if (data.Data["PO Box"] != null) { childEntry.Properties["postOfficeBox"].Value = (string)data.Data["PO Box"]; }
+                if (data.Data["City"] != null) { childEntry.Properties["l"].Value = (string)data.Data["City"]; }
+                if (data.Data["State/Province"] != null) { childEntry.Properties["st"].Value = (string)data.Data["State/Province"]; }
+                if (data.Data["Zip/Postal Code"] != null) { childEntry.Properties["postalCode"].Value = (string)data.Data["Zip/Postal Code"]; }
+                if (data.Data["Country/Region"] != null) { childEntry.Properties["c"].Value = (string)data.Data["Country/Region"]; }
 
-                if(data.Data["Home Phone"] != null){ childEntry.Properties["homePhone"].Value = (string)data.Data["Home Phone"];}
-                if(data.Data["Mobile Phone"] != null){ childEntry.Properties["mobile"].Value = (string)data.Data["Mobile Phone"];}
+                if (data.Data["Home Folder"] != null) { childEntry.Properties["homeDirectory"].Value = (string)data.Data["Home Folder"]; }
+                if (data.Data["Home Folder Drive Letter"] != null) { childEntry.Properties["homeDrive"].Value = (string)data.Data["Home Folder Drive Letter"]; }
 
-                if(data.Data["Department"] != null){ childEntry.Properties["department"].Value = (string)data.Data["Department"];}
-                if(data.Data["Job title"] != null){ childEntry.Properties["title"].Value = (string)data.Data["Job title"];}
-                if(data.Data["Company"] != null){ childEntry.Properties["company"].Value = (string)data.Data["Company"];}
-                if(data.Data["Manager (DN)"] != null){ childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"];}
+                if (data.Data["Home Phone"] != null) { childEntry.Properties["homePhone"].Value = (string)data.Data["Home Phone"]; }
+                if (data.Data["Mobile Phone"] != null) { childEntry.Properties["mobile"].Value = (string)data.Data["Mobile Phone"]; }
 
-                if(data.Data["Empolyee ID"] != null){ childEntry.Properties["employeeID"].Value = (string)data.Data["Empolyee ID"];}
-                if(data.Data["Empolyee Number"] != null){ childEntry.Properties["employeeNumber"].Value = (string)data.Data["Empolyee Number"];}
-                if(data.Data["Empolyee Type"] != null){ childEntry.Properties["employeeType"].Value = (string)data.Data["Empolyee Type"];}
+                if (data.Data["Department"] != null) { childEntry.Properties["department"].Value = (string)data.Data["Department"]; }
+                if (data.Data["Job title"] != null) { childEntry.Properties["title"].Value = (string)data.Data["Job title"]; }
+                if (data.Data["Company"] != null) { childEntry.Properties["company"].Value = (string)data.Data["Company"]; }
+                if (data.Data["Manager (DN)"] != null) { childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"]; }
+
+                if (data.Data["Empolyee ID"] != null) { childEntry.Properties["employeeID"].Value = (string)data.Data["Empolyee ID"]; }
+                if (data.Data["Empolyee Number"] != null) { childEntry.Properties["employeeNumber"].Value = (string)data.Data["Empolyee Number"]; }
+                if (data.Data["Empolyee Type"] != null) { childEntry.Properties["employeeType"].Value = (string)data.Data["Empolyee Type"]; }
 
 
-                if((bool?)data.Data["Must Change Password On Next Login"] == true) {childEntry.Properties["pwdLastSet"].Value = 0;}
+                if ((bool?)data.Data["Must Change Password On Next Login"] == true) { childEntry.Properties["pwdLastSet"].Value = 0; }
                 childEntry.CommitChanges();
 
+                string[] ParametersList = this.Attributes;
+                if (ParametersList != null && ParametersList.Length != 0)
+                {
+                    foreach (string CurrParameter in ParametersList)
+                    {
+                        if (data.Data[CurrParameter] != null) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
+                    }
+                    childEntry.CommitChanges();
+                }
+
                 return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
-                
+
 
 
 
