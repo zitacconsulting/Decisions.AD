@@ -167,26 +167,13 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["sn"].Value = LastName;
 
                 if(AccountDisabled == true) {
-                    //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
-                                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
-                {
-                {
-                    "Error Message",
-                    (object) "True"
-                
-                }
-                });
+                    childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
+
                 }
                 else if(AccountDisabled == false)
                 {
-                    //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
-                                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
-                {
-                {
-                    "Error Message",
-                    (object) "False"
-                }
-                });
+                    childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
+
                 }
 
 
