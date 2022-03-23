@@ -79,11 +79,11 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU (DN)"));
 
                 // User Data
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" }, EditorAttribute = (PropertyEditorAttribute)new SelectStringEditorAttribute((new string[] "Enabled", "Disabled"))});
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Cannot Change Password") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool)), "Normal User") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Account Disabled") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Cannot Change Password") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Normal User") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "sAMAccountName") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") { Categories = new string[] { "User Data" } });
@@ -129,14 +129,7 @@ namespace Zitac.AD.Steps
             string sAMAccountName = data.Data["sAMAccountName"] as string;
             string Passwd = data.Data["Password"] as string;
 
-            if((bool)data.Data["Account Disabled"] != null)
-            {
-                bool AccountDisabled = (bool)data.Data["Account Disabled"];
-            }
-            else{
-                bool AccountDisabled = false;
-            }
-
+            bool? AccountDisabled = data.Data["Account Disabled"] as bool?;
 
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
@@ -173,7 +166,7 @@ namespace Zitac.AD.Steps
                 childEntry.Properties["givenName"].Value = FirstName;
                 childEntry.Properties["sn"].Value = LastName;
 
-                if(AccountDisabled != null && AccountDisabled) {
+                if(AccountDisabled == true) {
                     //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value | 0x2;
                                     return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
                 {
@@ -183,7 +176,7 @@ namespace Zitac.AD.Steps
                 }
                 });
                 }
-                else if(AccountDisabled != null && !AccountDisabled)
+                else if(AccountDisabled == false)
                 {
                     //childEntry.Properties["userAccountControl"][0] = (int)childEntry.Properties["userAccountControl"].Value & ~0x2;
                                     return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
