@@ -95,10 +95,6 @@ namespace Zitac.AD.Steps
 
             try
             {
-                string distinguishedName = GetDistinguishedName.GetObjectDistinguishedName(GetDistinguishedName.ADObjectType.User, UserName, ADCredentials.ADUsername, ADCredentials.ADPassword, ADServer);
-
-
-                string str = string.Empty;
                 string baseLdapPath = string.Format("LDAP://{0}", (object) ADServer);
                 DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
                 DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
