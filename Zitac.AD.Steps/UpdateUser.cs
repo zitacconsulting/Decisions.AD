@@ -26,7 +26,7 @@ namespace Zitac.AD.Steps
     [AutoRegisterStep("Update User", "Integration", "Active Directory", "Zitac", "User")]
     [Writable]
 
-    public class UpdateUser : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, INotifyPropertyChanged//, IDefaultInputMappingStep
+    public class UpdateUser : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, INotifyPropertyChanged, IDefaultInputMappingStep
     {
         [WritableValue]
         private bool integratedAuthentication;
@@ -64,6 +64,51 @@ namespace Zitac.AD.Steps
             }
         }
 
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[32];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Account Disabled" };
+                inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Password Never Expires" };
+                inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Must Change Password On Next Login" };
+                inputMappingArray[3] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Login Name (Pre-Win 2000)" };
+                inputMappingArray[4] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Login Name (UPN)" };
+                inputMappingArray[5] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "First Name" };
+                inputMappingArray[6] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Last Name" };
+                inputMappingArray[7] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Initials" };
+                inputMappingArray[8] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Display Name" };
+                inputMappingArray[9] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Office" };
+                inputMappingArray[10] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Telephone Number" };
+                inputMappingArray[11] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Description" };
+                inputMappingArray[12] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Email Address" };
+                inputMappingArray[13] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Web Page" };
+                inputMappingArray[14] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Account Expires" };
+
+                inputMappingArray[15] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Street" };
+                inputMappingArray[16] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "PO Box" };
+                inputMappingArray[17] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "City" };
+                inputMappingArray[18] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "State/Province" };
+                inputMappingArray[19] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Zip/Postal Code" };
+                inputMappingArray[20] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Country/Region" };
+
+                inputMappingArray[21] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Folder" };
+                inputMappingArray[22] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Folder Drive Letter" };
+
+                inputMappingArray[23] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Phone" };
+                inputMappingArray[24] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Mobile Phone" };
+
+                inputMappingArray[25] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Department" };
+                inputMappingArray[26] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Job title" };
+                inputMappingArray[27] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Company" };
+                inputMappingArray[28] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Manager (DN)" };
+
+                inputMappingArray[29] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee ID" };
+                inputMappingArray[30] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee Number" };
+                inputMappingArray[31] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee Type" };
+                return inputMappingArray;
+            }
+        }
         public DataDescription[] InputData
         {
             get
@@ -176,7 +221,7 @@ namespace Zitac.AD.Steps
             try
             {
 
-                string baseLdapPath = string.Format("LDAP://{0}", (object) ADServer);
+                string baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
                 DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
                 DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
                 directorySearcher.Filter = "(&(objectClass=user)(|(sAMAccountName=" + UserName + ")(dn=" + UserName + ")))";
@@ -192,7 +237,7 @@ namespace Zitac.AD.Steps
 
                 if (one == null)
                 {
-                    throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object) UserName));
+                    throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object)UserName));
                 }
                 DirectoryEntry childEntry = one.GetDirectoryEntry();
 
@@ -201,7 +246,7 @@ namespace Zitac.AD.Steps
                 if (data.Data["First Name"] != null) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
                 if (data.Data["Last Name"] != null) { childEntry.Properties["sn"].Value = (string)data.Data["Last Name"]; }
                 childEntry.CommitChanges();
-                
+
 
                 int UserAccessControl = (int)childEntry.Properties["userAccountControl"].Value;
                 if ((bool?)data.Data["Account Disabled"] == true) { UserAccessControl = UserAccessControl | 0x2; }

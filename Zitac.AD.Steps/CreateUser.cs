@@ -26,7 +26,7 @@ namespace Zitac.AD.Steps
     [AutoRegisterStep("Create User", "Integration", "Active Directory", "Zitac", "User")]
     [Writable]
 
-    public class CreateUser : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, INotifyPropertyChanged//, IDefaultInputMappingStep
+    public class CreateUser : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, INotifyPropertyChanged, IDefaultInputMappingStep
     {
         [WritableValue]
         private bool integratedAuthentication;
@@ -64,6 +64,49 @@ namespace Zitac.AD.Steps
             }
         }
 
+
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[28];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Account Disabled" };
+                inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Password Never Expires" };
+                inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Must Change Password On Next Login" };
+                inputMappingArray[3] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Initials" };
+                inputMappingArray[4] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Display Name" };
+                inputMappingArray[5] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Office" };
+                inputMappingArray[6] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Telephone Number" };
+                inputMappingArray[7] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Description" };
+                inputMappingArray[8] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Email Address" };
+                inputMappingArray[9] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Web Page" };
+                inputMappingArray[10] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Account Expires" };
+
+                inputMappingArray[11] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Street" };
+                inputMappingArray[12] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "PO Box" };
+                inputMappingArray[13] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "City" };
+                inputMappingArray[14] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "State/Province" };
+                inputMappingArray[15] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Zip/Postal Code" };
+                inputMappingArray[16] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Country/Region" };
+
+                inputMappingArray[17] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Folder" };
+                inputMappingArray[18] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Folder Drive Letter" };
+
+                inputMappingArray[19] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Home Phone" };
+                inputMappingArray[20] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Mobile Phone" };
+
+                inputMappingArray[21] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Department" };
+                inputMappingArray[22] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Job title" };
+                inputMappingArray[23] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Company" };
+                inputMappingArray[24] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Manager (DN)" };
+
+                inputMappingArray[25] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee ID" };
+                inputMappingArray[26] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee Number" };
+                inputMappingArray[27] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Employee Type" };
+                return inputMappingArray;
+            }
+        }
+
         public DataDescription[] InputData
         {
             get
@@ -83,7 +126,7 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Password Never Expires") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name (Pre-Win 2000)") { Categories = new string[] { "User Data" } });
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name") { Categories = new string[] { "User Data" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name (UPN)") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Initials") { Categories = new string[] { "User Data" } });
@@ -163,7 +206,7 @@ namespace Zitac.AD.Steps
             string FirstName = data.Data["First Name"] as string;
             string LastName = data.Data["Last Name"] as string;
             string sAMAccountName = data.Data["Login Name (Pre-Win 2000)"] as string;
-            string LoginName = data.Data["Login Name"] as string;
+            string LoginName = data.Data["Login Name (UPN)"] as string;
             string Passwd = data.Data["Password"] as string;
 
             int UserAccessControl = 512;
