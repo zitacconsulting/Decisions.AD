@@ -165,10 +165,6 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Employee Number") { Categories = new string[] { "User Data", "Employee" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Employee Type") { Categories = new string[] { "User Data", "Employee" } });
 
-
-
-
-
                 //Additional Attributes
                 if (this.Attributes != null && this.Attributes.Length != 0)
                 {
@@ -241,12 +237,17 @@ namespace Zitac.AD.Steps
                 }
                 DirectoryEntry childEntry = one.GetDirectoryEntry();
 
-                if (data.Data["Login Name (Pre-Win 2000)"] != null) { childEntry.Properties["sAMAccountName"].Value = (string)data.Data["Login Name (Pre-Win 2000)"]; }
-                if (data.Data["Login Name (UPN)"] != null) { childEntry.Properties["userPrincipalName"].Value = (string)data.Data["Login Name (UPN)"]; }
-                if (data.Data["First Name"] != null) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
-                if (data.Data["Last Name"] != null) { childEntry.Properties["sn"].Value = (string)data.Data["Last Name"]; }
-                childEntry.CommitChanges();
+                if (data.Data["Login Name (Pre-Win 2000)"] != null && (data.Data["Login Name (Pre-Win 2000)"]).ToString().Length != 0 ) { childEntry.Properties["sAMAccountName"].Value = (string)data.Data["Login Name (Pre-Win 2000)"]; }
+                if (data.Data.ContainsKey("Login Name (Pre-Win 2000)") && (data.Data["Login Name (Pre-Win 2000)"]) == null) {childEntry.Properties["sAMAccountName"].Clear();}
 
+                if (data.Data["Login Name (UPN)"] != null && (data.Data["Login Name (UPN)"]).ToString().Length != 0 ) { childEntry.Properties["userPrincipalName"].Value = (string)data.Data["Login Name (UPN)"]; }
+                if (data.Data.ContainsKey("Login Name (UPN)") && (data.Data["Login Name (UPN)"]) == null) {childEntry.Properties["userPrincipalName"].Clear();}
+
+                if (data.Data["First Name"] != null && (data.Data["First Name"]).ToString().Length != 0 ) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
+                if (data.Data.ContainsKey("First Name") && (data.Data["First Name"]) == null) {childEntry.Properties["givenName"].Clear();}
+
+                if (data.Data["Last Name"] != null && (data.Data["Last Name"]).ToString().Length != 0 ) { childEntry.Properties["sn"].Value = (string)data.Data["Last Name"]; }
+                if (data.Data.ContainsKey("Last Name") && (data.Data["Last Name"]) == null) {childEntry.Properties["sn"].Clear();}
 
                 int UserAccessControl = (int)childEntry.Properties["userAccountControl"].Value;
                 if ((bool?)data.Data["Account Disabled"] == true) { UserAccessControl = UserAccessControl | 0x2; }
@@ -254,37 +255,87 @@ namespace Zitac.AD.Steps
                 if ((bool?)data.Data["Password Never Expires"] == true) { UserAccessControl = UserAccessControl | 0x10000; }
                 if ((bool?)data.Data["Password Never Expires"] == false) { UserAccessControl = UserAccessControl & ~0x10000; }
                 if (UserAccessControl != (int)childEntry.Properties["userAccountControl"].Value) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
-                if (data.Data["Initials"] != null) { childEntry.Properties["initials"].Value = (string)data.Data["Initials"]; }
-                if (data.Data["Display Name"] != null) { childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"]; }
-                if (data.Data["Office"] != null) { childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"]; }
-                if (data.Data["Telephone Number"] != null) { childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"]; }
-                if (data.Data["Description"] != null) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
-                if (data.Data["Email Address"] != null) { childEntry.Properties["mail"].Value = (string)data.Data["Email Address"]; }
-                if (data.Data["Web Page"] != null) { childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"]; }
-                if (data.Data["Account Expires"] != null) { childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc()); }
 
-                if (data.Data["Street"] != null) { childEntry.Properties["streetAddress"].Value = (string)data.Data["Street"]; }
-                if (data.Data["PO Box"] != null) { childEntry.Properties["postOfficeBox"].Value = (string)data.Data["PO Box"]; }
-                if (data.Data["City"] != null) { childEntry.Properties["l"].Value = (string)data.Data["City"]; }
+                if (data.Data["Initials"] != null && (data.Data["Initials"]).ToString().Length != 0 ) { childEntry.Properties["initials"].Value = (string)data.Data["Initials"]; }
+                if (data.Data.ContainsKey("Initials") && (data.Data["Initials"]) == null) {childEntry.Properties["initials"].Clear();}
+
+                if (data.Data["Display Name"] != null && (data.Data["Display Name"]).ToString().Length != 0 ) { childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"]; }
+                if (data.Data.ContainsKey("Display Name") && (data.Data["Display Name"]) == null) {childEntry.Properties["displayName"].Clear();}                
+
+                if (data.Data["Office"] != null && (data.Data["Office"]).ToString().Length != 0 ) { childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"]; }
+                if (data.Data.ContainsKey("Office") && (data.Data["Office"]) == null) {childEntry.Properties["physicalDeliveryOfficeName"].Clear();}
+
+                if (data.Data["Telephone Number"] != null && (data.Data["Telephone Number"]).ToString().Length != 0 ) { childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"]; }
+                if (data.Data.ContainsKey("Telephone Number") && (data.Data["Telephone Number"]) == null) {childEntry.Properties["telephoneNumber"].Clear();}
+
+                if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0 ) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
+                if (data.Data.ContainsKey("Description") && (data.Data["Description"]) == null) {childEntry.Properties["description"].Clear();}
+
+                if (data.Data["Email Address"] != null && (data.Data["Email Address"]).ToString().Length != 0 ) { childEntry.Properties["mail"].Value = (string)data.Data["Email Address"]; }
+                if (data.Data.ContainsKey("Email Address") && (data.Data["Email Address"]) == null) {childEntry.Properties["mail"].Clear();}
+
+                if (data.Data["Web Page"] != null && (data.Data["Web Page"]).ToString().Length != 0 ) { childEntry.Properties["wWWHomePage"].Value = (string)data.Data["Web Page"]; }
+                if (data.Data.ContainsKey("Web Page") && (data.Data["Web Page"]) == null) {childEntry.Properties["wWWHomePage"].Clear();}
+
+                if (data.Data["Account Expires"] != null && (data.Data["Account Expires"]).ToString().Length != 0 ) { childEntry.Properties["accountExpires"].Value = Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc()); }
+                if (data.Data.ContainsKey("Account Expires") && (data.Data["Account Expires"]) == null) {childEntry.Properties["accountExpires"].Clear();}
+
+                if (data.Data["Street"] != null && (data.Data["Street"]).ToString().Length != 0 ) { childEntry.Properties["streetAddress"].Value = (string)data.Data["Street"]; }
+                if (data.Data.ContainsKey("Street") && (data.Data["Street"]) == null) {childEntry.Properties["streetAddress"].Clear();}
+
+                if (data.Data["PO Box"] != null && (data.Data["PO Box"]).ToString().Length != 0 ) { childEntry.Properties["postOfficeBox"].Value = (string)data.Data["PO Box"]; }
+                if (data.Data.ContainsKey("PO Box") && (data.Data["PO Box"]) == null) {childEntry.Properties["postOfficeBox"].Clear();}
+
+                if (data.Data["City"] != null && (data.Data["City"]).ToString().Length != 0 ) { childEntry.Properties["l"].Value = (string)data.Data["City"]; }
+                if (data.Data.ContainsKey("City") && (data.Data["City"]) == null) {childEntry.Properties["l"].Clear();}
+
+                if (data.Data["State/Province"] != null && (data.Data["State/Province"]).ToString().Length != 0 ) { childEntry.Properties["st"].Value = (string)data.Data["State/Province"]; }
+                if (data.Data.ContainsKey("State/Province") && (data.Data["State/Province"]) == null) {childEntry.Properties["st"].Clear();}
                 if (data.Data["State/Province"] != null) { childEntry.Properties["st"].Value = (string)data.Data["State/Province"]; }
-                if (data.Data["Zip/Postal Code"] != null) { childEntry.Properties["postalCode"].Value = (string)data.Data["Zip/Postal Code"]; }
-                if (data.Data["Country/Region"] != null) { childEntry.Properties["c"].Value = (string)data.Data["Country/Region"]; }
 
-                if (data.Data["Home Folder"] != null) { childEntry.Properties["homeDirectory"].Value = (string)data.Data["Home Folder"]; }
-                if (data.Data["Home Folder Drive Letter"] != null) { childEntry.Properties["homeDrive"].Value = (string)data.Data["Home Folder Drive Letter"]; }
+                if (data.Data["Zip/Postal Code"] != null && (data.Data["Zip/Postal Code"]).ToString().Length != 0 ) { childEntry.Properties["postalCode"].Value = (string)data.Data["Zip/Postal Code"]; }
+                if (data.Data.ContainsKey("Zip/Postal Code") && (data.Data["Zip/Postal Code"]) == null) {childEntry.Properties["postalCode"].Clear();}
 
-                if (data.Data["Home Phone"] != null) { childEntry.Properties["homePhone"].Value = (string)data.Data["Home Phone"]; }
-                if (data.Data["Mobile Phone"] != null) { childEntry.Properties["mobile"].Value = (string)data.Data["Mobile Phone"]; }
+                if (data.Data["Country/Region"] != null && (data.Data["Country/Region"]).ToString().Length != 0 ) { childEntry.Properties["c"].Value = (string)data.Data["Country/Region"]; }
+                if (data.Data.ContainsKey("Country/Region") && (data.Data["Country/Region"]) == null) {childEntry.Properties["c"].Clear();}
 
-                if (data.Data["Department"] != null) { childEntry.Properties["department"].Value = (string)data.Data["Department"]; }
-                if (data.Data["Job title"] != null) { childEntry.Properties["title"].Value = (string)data.Data["Job title"]; }
-                if (data.Data["Company"] != null) { childEntry.Properties["company"].Value = (string)data.Data["Company"]; }
+
+                if (data.Data["Home Folder"] != null && (data.Data["Home Folder"]).ToString().Length != 0 ) { childEntry.Properties["homeDirectory"].Value = (string)data.Data["Home Folder"]; }
+                if (data.Data.ContainsKey("Home Folder") && (data.Data["Home Folder"]) == null) {childEntry.Properties["homeDirectory"].Clear();}
+
+                if (data.Data["Home Folder Drive Letter"] != null && (data.Data["Home Folder Drive Letter"]).ToString().Length != 0 ) { childEntry.Properties["homeDrive"].Value = (string)data.Data["Home Folder Drive Letter"]; }
+                if (data.Data.ContainsKey("Home Folder Drive Letter") && (data.Data["Home Folder Drive Letter"]) == null) {childEntry.Properties["homeDrive"].Clear();}
+
+
+                if (data.Data["Home Phone"] != null && (data.Data["Home Phone"]).ToString().Length != 0 ) { childEntry.Properties["homePhone"].Value = (string)data.Data["Home Phone"]; }
+                if (data.Data.ContainsKey("Home Phone") && (data.Data["Home Phone"]) == null) {childEntry.Properties["homePhone"].Clear();}
+
+                if (data.Data["Mobile Phone"] != null && (data.Data["Mobile Phone"]).ToString().Length != 0 ) { childEntry.Properties["mobile"].Value = (string)data.Data["Mobile Phone"]; }
+                if (data.Data.ContainsKey("Mobile Phone") && (data.Data["Mobile Phone"]) == null) {childEntry.Properties["mobile"].Clear();}
+
+
+                if (data.Data["Department"] != null && (data.Data["Department"]).ToString().Length != 0 ) { childEntry.Properties["department"].Value = (string)data.Data["Department"]; }
+                if (data.Data.ContainsKey("Department") && (data.Data["Department"]) == null) {childEntry.Properties["department"].Clear();}
+
+                if (data.Data["Job title"] != null && (data.Data["Job title"]).ToString().Length != 0 ) { childEntry.Properties["title"].Value = (string)data.Data["Job title"]; }
+                if (data.Data.ContainsKey("Job title") && (data.Data["Job title"]) == null) {childEntry.Properties["title"].Clear();}
+
+                if (data.Data["Company"] != null && (data.Data["Company"]).ToString().Length != 0 ) { childEntry.Properties["company"].Value = (string)data.Data["Company"]; }
+                if (data.Data.ContainsKey("Company") && (data.Data["Company"]) == null) {childEntry.Properties["company"].Clear();}
+
+                if (data.Data["Manager (DN)"] != null && (data.Data["Manager (DN)"]).ToString().Length != 0 ) { childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"]; }
+                if (data.Data.ContainsKey("Manager (DN)") && (data.Data["Manager (DN)"]) == null) {childEntry.Properties["manager"].Clear();}
                 if (data.Data["Manager (DN)"] != null) { childEntry.Properties["manager"].Value = (string)data.Data["Manager (DN)"]; }
 
-                if (data.Data["Employee ID"] != null) { childEntry.Properties["employeeID"].Value = (string)data.Data["Employee ID"]; }
-                if (data.Data["Employee Number"] != null) { childEntry.Properties["employeeNumber"].Value = (string)data.Data["Employee Number"]; }
-                if (data.Data["Employee Type"] != null) { childEntry.Properties["employeeType"].Value = (string)data.Data["Employee Type"]; }
 
+                if (data.Data["Employee ID"] != null && (data.Data["Employee ID"]).ToString().Length != 0 ) { childEntry.Properties["employeeID"].Value = (string)data.Data["Employee ID"]; }
+                if (data.Data.ContainsKey("Employee ID") && (data.Data["Employee ID"]) == null) {childEntry.Properties["employeeID"].Clear();}
+
+                if (data.Data["Employee Number"] != null && (data.Data["Employee Number"]).ToString().Length != 0 ) { childEntry.Properties["employeeNumber"].Value = (string)data.Data["Employee Number"]; }
+                if (data.Data.ContainsKey("Employee Number") && (data.Data["Employee Number"]) == null) {childEntry.Properties["employeeNumber"].Clear();}
+
+                if (data.Data["Employee Type"] != null && (data.Data["Employee Type"]).ToString().Length != 0 ) { childEntry.Properties["employeeType"].Value = (string)data.Data["Employee Type"]; }
+                if (data.Data.ContainsKey("Employee Type") && (data.Data["Employee Type"]) == null) {childEntry.Properties["employeeType"].Clear();}
 
                 if ((bool?)data.Data["Must Change Password On Next Login"] == true) { childEntry.Properties["pwdLastSet"].Value = 0; }
                 childEntry.CommitChanges();
