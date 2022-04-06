@@ -345,7 +345,8 @@ namespace Zitac.AD.Steps
                 {
                     foreach (string CurrParameter in ParametersList)
                     {
-                        if (data.Data[CurrParameter] != null) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
+                        if (data.Data[CurrParameter] != null && (data.Data[CurrParameter]).ToString().Length != 0 ) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
+                        if (data.Data.ContainsKey(CurrParameter) && (data.Data[CurrParameter]) == null) {childEntry.Properties[CurrParameter].Clear();}
                     }
                     childEntry.CommitChanges();
                 }
