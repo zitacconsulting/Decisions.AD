@@ -237,14 +237,28 @@ namespace Zitac.AD.Steps
                 DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + data.Data["First Name"] + " " + data.Data["Last Name"], "user");
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["userPrincipalName"].Value = LoginName;
-                if (data.Data["First Name"] != null && data.Data["First Name"].ToString().Length != 0 ) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
-                if (data.Data["Last Name"] != null && data.Data["Last Name"].ToString().Length != 0 ) { childEntry.Properties["sn"].Value = (string)data.Data["Last Name"]; }
+                if (data.Data["First Name"] != null && data.Data["First Name"].ToString().Length != 0) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
+                if (data.Data["Last Name"] != null && data.Data["Last Name"].ToString().Length != 0) { childEntry.Properties["sn"].Value = (string)data.Data["Last Name"]; }
                 childEntry.CommitChanges();
                 ouEntry.CommitChanges();
-                childEntry.Invoke("SetPassword", new object[] { Passwd });
-                childEntry.CommitChanges();
+                try
+                {
+                    childEntry.Invoke("SetPassword", new object[] { Passwd });
+                    childEntry.CommitChanges();
+                }
+                catch (Exception e)
+                {
+                    string ExceptionMessage = "Failed to set the password. Error:" + e.ToString();
+                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) ExceptionMessage
+                }
+                });
+                }
                 if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
-                if (data.Data["Initials"] != null && data.Data["Initials"].ToString().Length != 0 ) { childEntry.Properties["initials"].Value = (string)data.Data["Initials"]; }
+                if (data.Data["Initials"] != null && data.Data["Initials"].ToString().Length != 0) { childEntry.Properties["initials"].Value = (string)data.Data["Initials"]; }
                 if (data.Data["Display Name"] != null && data.Data["Display Name"].ToString().Length != 0) { childEntry.Properties["displayName"].Value = (string)data.Data["Display Name"]; }
                 if (data.Data["Office"] != null && data.Data["Office"].ToString().Length != 0) { childEntry.Properties["physicalDeliveryOfficeName"].Value = (string)data.Data["Office"]; }
                 if (data.Data["Telephone Number"] != null && data.Data["Telephone Number"].ToString().Length != 0) { childEntry.Properties["telephoneNumber"].Value = (string)data.Data["Telephone Number"]; }
