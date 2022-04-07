@@ -44,7 +44,7 @@ namespace Zitac.AD.Steps
         private bool requireUppercase;
 
 
-        [PropertyClassification(new string[] { "Required Length" })]
+        [PropertyClassification(10, "RequiredLength", new string[] { "Options" })]
         public Int32 RequiredLength
         {
             get { return requiredLength; }
@@ -55,7 +55,7 @@ namespace Zitac.AD.Steps
         }
 
 
-        [PropertyClassification(new string[] { "Require Non Letter Or Digit" })]
+        [PropertyClassification(10, "Require Non Letter Or Digit", new string[] { "Options" })]
         public bool RequireNonLetterOrDigit
         {
             get { return requireNonLetterOrDigit; }
@@ -65,7 +65,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-        [PropertyClassification(new string[] { "Require Digit" })]
+        [PropertyClassification(10, "Require Digit", new string[] { "Options" })]
         public bool RequireDigit
         {
             get { return requireDigit; }
@@ -75,7 +75,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-                [PropertyClassification(new string[] { "Require Lowercase" })]
+        [PropertyClassification(10, "Require Lowercase", new string[] { "Options" })]
         public bool RequireLowercase
         {
             get { return requireLowercase; }
@@ -85,7 +85,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-                [PropertyClassification(new string[] { "Require Uppercase" })]
+        [PropertyClassification(10, "Require Uppercase", new string[] { "Options" })]
         public bool RequireUppercase
         {
             get { return requireUppercase; }
@@ -140,7 +140,7 @@ namespace Zitac.AD.Steps
 
             return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "Password", (string)password.ToString() } });
         }
-            
+
     }
 
 }
