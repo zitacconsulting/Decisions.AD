@@ -248,7 +248,7 @@ namespace Zitac.AD.Steps
                 }
                 catch (Exception e)
                 {
-                    string ExceptionMessage = "Failed to set the password. Error:" + e.ToString();
+                    string ExceptionMessage = "Failed to set the password. Error:" + e.InnerException.ToString();
                     return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
                 {
                 {
