@@ -18,6 +18,7 @@ using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
+using System.Security.Principal;
 
 namespace Zitac.AD.Steps
 {
@@ -69,7 +70,7 @@ namespace Zitac.AD.Steps
 
                 return new[] {
                     new OutcomeScenarioData("Done"),
-                    new OutcomeScenarioData("Already Member"),
+                    new OutcomeScenarioData("Already Member",new DataDescription(typeof(string), "SID")),
                     new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
                 };
             }
@@ -131,11 +132,15 @@ namespace Zitac.AD.Steps
                 DirectoryEntry ent = FoundGroup.GetDirectoryEntry();
                 DirectoryEntry Obj = FoundObject.GetDirectoryEntry();
 
+
+                string objectID = (new SecurityIdentifier((byte[])ent.Properties["objectSid"][0],0)).ToString();
+                string GroupSid = objectID.Split("-").Last();
+
+                if(GroupSid == Obj.Properties["primaryGroupID"].Value.ToString()) {return new ResultData("Already Member");}
                 PropertyValueCollection groups = Obj.Properties["memberOf"];
                 foreach (string g in groups)
                 {
 
-                    //return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "Membership", (string)g + " - " + ent.Properties["distinguishedName"].Value} });
                     if (g.Equals(ent.Properties["distinguishedName"].Value))
                     {
                         return new ResultData("Already Member");
