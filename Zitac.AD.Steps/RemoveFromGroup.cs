@@ -57,7 +57,7 @@ namespace Zitac.AD.Steps
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Group Name or DN"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Object Acocunt Name or DN"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Object Account Name or DN"));
                 return dataDescriptionList.ToArray();
             }
         }
@@ -79,7 +79,7 @@ namespace Zitac.AD.Steps
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
             string Group = data.Data["Group Name or DN"] as string;
-            string Object = data.Data["Object Acocunt Name or DN"] as string;
+            string Object = data.Data["Object Account Name or DN"] as string;
 
             Credentials ADCredentials = new Credentials();
 
