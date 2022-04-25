@@ -70,7 +70,7 @@ namespace Zitac.AD.Steps
 
                 return new[] {
                     new OutcomeScenarioData("Done"),
-                    new OutcomeScenarioData("Already Member",new DataDescription(typeof(string), "SID")),
+                    new OutcomeScenarioData("Already Member"),
                     new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
                 };
             }
