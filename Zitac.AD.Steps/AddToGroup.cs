@@ -69,6 +69,7 @@ namespace Zitac.AD.Steps
 
                 return new[] {
                     new OutcomeScenarioData("Done"),
+                    new OutcomeScenarioData("Already Member"),
                     new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
                 };
             }
@@ -127,12 +128,21 @@ namespace Zitac.AD.Steps
                     throw new Exception(string.Format("Unable to find Object with name or DN: '{0}' in the AD", (object)Object));
                 }
 
-
                 DirectoryEntry ent = FoundGroup.GetDirectoryEntry();
                 DirectoryEntry Obj = FoundObject.GetDirectoryEntry();
+
+                PropertyValueCollection groups = Obj.Properties["memberOf"];
+                foreach (string g in groups)
+                {
+
+                    //return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "Membership", (string)g + " - " + ent.Properties["distinguishedName"].Value} });
+                    if (g.Equals(ent.Properties["distinguishedName"].Value))
+                    {
+                        return new ResultData("Already Member");
+                    }
+                }
                 ent.Properties["member"].Add(Obj.Properties["distinguishedName"].Value);
                 ent.CommitChanges();
-
 
 
             }

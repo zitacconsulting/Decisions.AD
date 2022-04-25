@@ -69,6 +69,7 @@ namespace Zitac.AD.Steps
 
                 return new[] {
                     new OutcomeScenarioData("Done"),
+                    new OutcomeScenarioData("Not Member"),
                     new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
                 };
             }
@@ -130,10 +131,19 @@ namespace Zitac.AD.Steps
 
                 DirectoryEntry ent = FoundGroup.GetDirectoryEntry();
                 DirectoryEntry Obj = FoundObject.GetDirectoryEntry();
-                ent.Properties["member"].Remove(Obj.Properties["distinguishedName"].Value);
-                ent.CommitChanges();
 
 
+                PropertyValueCollection groups = Obj.Properties["memberOf"];
+                foreach (string g in groups)
+                {
+
+                    if (g.Equals(ent.Properties["distinguishedName"].Value))
+                    {
+                        ent.Properties["member"].Remove(Obj.Properties["distinguishedName"].Value);
+                        ent.CommitChanges();
+                        return new ResultData("Done");
+                    }
+                }
 
             }
             catch (Exception e)
@@ -148,7 +158,7 @@ namespace Zitac.AD.Steps
                 });
 
             }
-            return new ResultData("Done");
+            return new ResultData("Not Member");
         }
     }
 
