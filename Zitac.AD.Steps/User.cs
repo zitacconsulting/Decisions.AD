@@ -36,7 +36,10 @@ public class User
     public DateTime LastLogonDate { get; set; }
 
     [DataMember]
-    public string Location { get; set; }
+    public string Office { get; set; }
+    
+    [DataMember]
+    public string Initials { get; set; }
 
     [DataMember]
     public string ManagedBy { get; set; }
@@ -88,7 +91,8 @@ public class User
         this.LastName = this.GetStringProperty(entry, "sn");
         this.DNSHostName = this.GetStringProperty(entry, "dnshostname");
         this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
-        this.Location = this.GetStringProperty(entry, "location");
+        this.Office = this.GetStringProperty(entry, "physicalDeliveryOfficeName");
+        this.Initials = this.GetStringProperty(entry, "initials");
         this.ManagedBy = this.GetStringProperty(entry, "managedby");
         this.Name = this.GetStringProperty(entry, "name");
         this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
