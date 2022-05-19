@@ -11,63 +11,110 @@ namespace Zitac.AD.Steps;
 [DataContract]
 public class User
 {
-    [DataMember]
-    public DateTime AccountExpires { get; set; }
 
     [DataMember]
-    public string CN { get; set; }
-
+    public string LoginNamePreWin2000 { get; set; }
+    
     [DataMember]
-    public string Description { get; set; }
-
-    [DataMember]
-    public string DistinguishedName { get; set; }
-
+    public string LoginNameUPN { get; set; }
+    
     [DataMember]
     public string FirstName { get; set; }
-
+    
     [DataMember]
     public string LastName { get; set; }
-
-    [DataMember]
-    public string DNSHostName { get; set; }
-
-    [DataMember]
-    public DateTime LastLogonDate { get; set; }
-
-    [DataMember]
-    public string Office { get; set; }
     
     [DataMember]
     public string Initials { get; set; }
 
     [DataMember]
-    public string ManagedBy { get; set; }
+    public string DisplayName { get; set; }
+    
+    [DataMember]
+    public string Office { get; set; }
+    
+    [DataMember]
+    public string TelephoneNumber { get; set; }
+    
+    [DataMember]
+    public string Password { get; set; }
+    
+    [DataMember]
+    public string Description { get; set; }
+    
+    [DataMember]
+    public string EmailAddress { get; set; }
+    
+    [DataMember]
+    public string WebPage { get; set; }
+    
+    [DataMember]
+    public DateTime AccountExpires { get; set;}
 
     [DataMember]
-    public string Name { get; set; }
+    public string Street { get; set; }
+    
+    [DataMember]
+    public string POBox { get; set; }
+    
+    [DataMember]
+    public string City { get; set; }
+    
+    [DataMember]
+    public string StateProvince { get; set; }
+    
+    [DataMember]
+    public string ZipPostalCode { get; set; }
+    
+    [DataMember]
+    public string CountryRegion { get; set; }
+    
+    [DataMember]
+    public string HomeFolder { get; set; }
+    
+    [DataMember]
+    public string HomeFolderDriveLetter { get; set; }
+
+    [DataMember]
+    public string HomePhone { get; set; }
+
+    [DataMember]
+    public string MobilePhone { get; set; }
+
+    [DataMember]
+    public string Department { get; set; }
+    [DataMember]
+    public string JobTitle { get; set; }
+    
+    [DataMember]
+    public string Company { get; set; }
+    
+    [DataMember]
+    public string ManagerDN { get; set; }
+
+    [DataMember]
+    public string EmployeeID { get; set; }
+    
+    [DataMember]
+    public string EmployeeNumber { get; set; }
+    
+    [DataMember]
+    public string EmployeeType { get; set; }
+
+    [DataMember]
+    public string CN { get; set; }
+
+    [DataMember]
+    public string DistinguishedName { get; set; }
+
+    [DataMember]
+    public DateTime LastLogonDate { get; set; }
 
     [DataMember]
     public string ObjectGUID { get; set; }
 
     [DataMember]
-    public string OperatingSystem { get; set; }
-
-    [DataMember]
-    public string OperatingSystemHotfix { get; set; }
-
-    [DataMember]
-    public string OperatingSystemServicePack { get; set; }
-
-    [DataMember]
-    public string OperatingSystemVersion { get; set; }
-
-    [DataMember]
     public DateTime PasswordLastSet { get; set; }
-
-    [DataMember]
-    public string SamAccountName { get; set; }
-
 
     [DataMember]
     public DateTime WhenChanged { get; set; }
@@ -83,28 +130,45 @@ public class User
 
     public User(SearchResult entry, string[] AdditionalAttributes)
     {
-        this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
-        this.CN = this.GetStringProperty(entry, "cn");
-        this.Description = this.GetStringProperty(entry, "description");
-        this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
+
+        this.LoginNamePreWin2000 = this.GetStringProperty(entry, "sAMAccountName");
+        this.LoginNameUPN = this.GetStringProperty(entry, "userPrincipalName");
         this.FirstName = this.GetStringProperty(entry, "givenName");
         this.LastName = this.GetStringProperty(entry, "sn");
-        this.DNSHostName = this.GetStringProperty(entry, "dnshostname");
-        this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
-        this.Office = this.GetStringProperty(entry, "physicalDeliveryOfficeName");
         this.Initials = this.GetStringProperty(entry, "initials");
-        this.ManagedBy = this.GetStringProperty(entry, "managedby");
-        this.Name = this.GetStringProperty(entry, "name");
+        this.DisplayName = this.GetStringProperty(entry, "displayName");
+        this.Office = this.GetStringProperty(entry, "physicalDeliveryOfficeName");
+        this.TelephoneNumber = this.GetStringProperty(entry, "telephoneNumber");
+        this.Description = this.GetStringProperty(entry, "description");
+        this.EmailAddress = this.GetStringProperty(entry, "mail");
+        this.WebPage = this.GetStringProperty(entry, "wWWHomePage");
+        this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
+        this.Street = this.GetStringProperty(entry, "streetAddress");
+        this.POBox = this.GetStringProperty(entry, "postOfficeBox");
+        this.City = this.GetStringProperty(entry, "l");
+        this.StateProvince = this.GetStringProperty(entry, "st");
+        this.ZipPostalCode = this.GetStringProperty(entry, "postalCode");
+        this.CountryRegion = this.GetStringProperty(entry, "c");
+        this.HomeFolder = this.GetStringProperty(entry, "homeDirectory");
+        this.HomeFolderDriveLetter = this.GetStringProperty(entry, "homeDrive");
+        this.HomePhone = this.GetStringProperty(entry, "homePhone");
+        this.MobilePhone = this.GetStringProperty(entry, "mobile");
+        this.Department = this.GetStringProperty(entry, "department");
+        this.JobTitle = this.GetStringProperty(entry, "title");
+        this.Company = this.GetStringProperty(entry, "company");
+        this.ManagerDN = this.GetStringProperty(entry, "manager");
+        this.EmployeeID = this.GetStringProperty(entry, "employeeID");
+        this.EmployeeNumber = this.GetStringProperty(entry, "employeeNumber");
+        this.EmployeeType = this.GetStringProperty(entry, "employeeType");
+        this.CN = this.GetStringProperty(entry, "cn");
+        this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
+        this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
         this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
-        this.OperatingSystem = this.GetStringProperty(entry, "operatingsystem");
-        this.OperatingSystemHotfix = this.GetStringProperty(entry, "operatingsystemhotfix");
-        this.OperatingSystemServicePack = this.GetStringProperty(entry, "operatingsystemservicepack");
-        this.OperatingSystemVersion = this.GetStringProperty(entry, "operatingsystemversion");
         this.PasswordLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
-        this.SamAccountName = this.GetStringProperty(entry, "samaccountname");
         this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
         this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
         this.LogonCount = this.GetIntProperty(entry, "logonCount");
+  
 
         if (AdditionalAttributes != null)
         {
