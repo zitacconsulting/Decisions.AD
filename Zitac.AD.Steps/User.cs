@@ -114,6 +114,9 @@ public class User
     public string ObjectGUID { get; set; }
 
     [DataMember]
+    public string ObjectSID { get; set; }
+
+    [DataMember]
     public DateTime PasswordLastSet { get; set; }
 
     [DataMember]
@@ -124,6 +127,13 @@ public class User
 
     [DataMember]
     public Int64 LogonCount { get; set; }
+
+    [DataMember]
+    public Int64 uSNChanged { get; set; }
+    
+    [DataMember]
+    public bool AccountEnabled { get; set; }
+    
 
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
@@ -164,10 +174,13 @@ public class User
         this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
         this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
         this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
+        this.ObjectSID = this.GetStringProperty(entry, "objectSid");
         this.PasswordLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
         this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
         this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
         this.LogonCount = this.GetIntProperty(entry, "logonCount");
+        this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
+        this.AccountEnabled = this.IsEnabled(entry);
   
 
         if (AdditionalAttributes != null)
@@ -292,6 +305,17 @@ public class User
             return (System.Byte[])null;
         }
         return (System.Byte[])null;
+    }
+
+    private bool IsEnabled(SearchResult entry) {
+            ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
+            if (property != null && property.Count != 0)
+            {
+                int flags = (int)property[0];
+
+                return !Convert.ToBoolean(flags & 0x0002);
+            }
+            return new bool();
     }
 }
 
