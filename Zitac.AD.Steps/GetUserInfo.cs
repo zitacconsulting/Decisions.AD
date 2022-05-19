@@ -98,7 +98,7 @@ namespace Zitac.AD.Steps
                 string baseLdapPath = string.Format("LDAP://{0}", (object) ADServer);
                 DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
                 DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=user)(|(sAMAccountName=" + UserName + ")(dn=" + UserName + ")))";
+                directorySearcher.Filter = "(&(objectClass=user)(|(sAMAccountName=" + UserName + ")(distinguishedname=" + UserName + ")))";
 
                 SearchResult one = directorySearcher.FindOne();
 
