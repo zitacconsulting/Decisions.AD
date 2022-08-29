@@ -68,7 +68,7 @@ namespace Zitac.AD.Steps
                     return new[] {
                     new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result")),
                     new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
-                    new OutcomeScenarioData("NotFound"), 
+                    new OutcomeScenarioData("Not Found"), 
                 }; 
                 }
             }
@@ -116,7 +116,7 @@ namespace Zitac.AD.Steps
 
                 if (one == null)
                 {
-                    return new ResultData("NotFound");
+                    return new ResultData("Not Found");
                     //throw new Exception(string.Format("Unable to find computer with name: '{0}' in the AD", (object) ComputerName));
                 }
 
