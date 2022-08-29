@@ -70,6 +70,9 @@ namespace Zitac.AD.Steps;
     public Int64 LogonCount { get; set; }
 
     [DataMember]
+    public bool AccountEnabled { get; set; }
+
+    [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
     public Computer(SearchResult entry, string[] AdditionalAttributes)
@@ -93,6 +96,7 @@ namespace Zitac.AD.Steps;
       this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
       this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
       this.LogonCount = this.GetIntProperty(entry, "logonCount");
+      this.AccountEnabled = this.IsEnabled(entry);
 
       if(AdditionalAttributes != null)
       {
@@ -215,6 +219,16 @@ namespace Zitac.AD.Steps;
         return (System.Byte[]) null;
       }
     return (System.Byte[]) null;
+    }
+        private bool IsEnabled(SearchResult entry) {
+            ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
+            if (property != null && property.Count != 0)
+            {
+                int flags = (int)property[0];
+
+                return !Convert.ToBoolean(flags & 0x0002);
+            }
+            return new bool();
     }
   }
 
