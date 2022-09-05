@@ -134,7 +134,7 @@ namespace Zitac.AD.Steps
                             {
                                 foreach (SearchParameters CurrParameter in ParametersList)
                                 {
-                                    dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), CurrParameter.Alias));
+                                    dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (object)), CurrParameter.Alias));
                                 }
                             }
 
@@ -173,7 +173,7 @@ namespace Zitac.AD.Steps
                         Filter = "(|";
                     foreach (SearchParameters CurrParameter in ParametersList)
                     {
-                        string SearchValue = data.Data[CurrParameter.Alias] as string;
+                        object SearchValue = data.Data[CurrParameter.Alias] as object;
                         switch (CurrParameter.MatchCriteria)
                          {
                              case "Equals":
