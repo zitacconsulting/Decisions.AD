@@ -82,7 +82,7 @@ namespace Zitac.AD.Steps;
       this.Description = this.GetStringProperty(entry, "description");
       this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
       this.DNSHostName = this.GetStringProperty(entry, "dnshostname");
-      this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
+      this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogonTimestamp");
       this.Location = this.GetStringProperty(entry, "location");
       this.ManagedBy = this.GetStringProperty(entry, "managedby");
       this.Name = this.GetStringProperty(entry, "name");
