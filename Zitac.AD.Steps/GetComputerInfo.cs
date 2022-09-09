@@ -30,6 +30,9 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool integratedAuthentication;
 
+        [WritableValue]
+        private bool showOutcomeforNoResults;
+
         [PropertyClassification(new string[]{"Integrated Authentication"})]
         public bool IntegratedAuthentication
         {
@@ -43,6 +46,18 @@ namespace Zitac.AD.Steps
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
             }
+        }
+
+        [PropertyClassification(1, "Show Outcome for No Results", new string[] {"Outcomes"})]
+        public bool ShowOutcomeforNoResults
+        {
+            get {return showOutcomeforNoResults; }
+            set 
+            {
+                showOutcomeforNoResults = value;
+                this.OnPropertyChanged("OutcomeScenarios");
+            }
+
         }
 
             public DataDescription[] InputData
@@ -64,12 +79,14 @@ namespace Zitac.AD.Steps
     
             public override OutcomeScenarioData[] OutcomeScenarios {
                 get {
-
-                    return new[] {
-                    new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result")),
-                    new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
-                    new OutcomeScenarioData("Not Found"), 
-                }; 
+                    List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
+                    
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(User), "Result",true)));
+                    if (ShowOutcomeforNoResults) {
+                        outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
+                    }
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
+                    return outcomeScenarioDataList.ToArray();
                 }
             }
 
@@ -116,7 +133,7 @@ namespace Zitac.AD.Steps
 
                 if (one == null)
                 {
-                    return new ResultData("Not Found");
+                    return new ResultData("No Results");
                     //throw new Exception(string.Format("Unable to find computer with name: '{0}' in the AD", (object) ComputerName));
                 }
 

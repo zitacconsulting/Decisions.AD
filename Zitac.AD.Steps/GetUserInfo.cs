@@ -139,7 +139,8 @@ namespace Zitac.AD.Steps
 
                 if (one == null)
                 {
-                    throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object) UserName));
+                    //throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object) UserName));
+                    return new ResultData("No Results");
                 }
 
                 User Results = new User(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership);
