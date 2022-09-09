@@ -136,7 +136,7 @@ public class User
     public bool AccountEnabled { get; set; }
 
     [DataMember]
-    public Group[] Groups { get; set; }
+    public Group[] MemberOf { get; set; }
 
 
     [DataMember]
@@ -186,7 +186,8 @@ public class User
         this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
         this.AccountEnabled = this.IsEnabled(entry);
 
-        this.Groups = this.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
+        GroupHelper gr = new GroupHelper(); 
+        this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
 
         if (AdditionalAttributes != null)
         {
@@ -322,47 +323,6 @@ public class User
             return !Convert.ToBoolean(flags & 0x0002);
         }
         return new bool();
-    }
-
-    private Group[] GetMembership(SearchResult entry, string propertyName, bool recursive, string ADServer, string ADUsername, string ADPassword)
-    {
-        ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
-        IEnumerator en = ValueCollection.GetEnumerator();
-
-        List<Group> GroupList = new List<Group>();
-
-        while (en.MoveNext())
-        {
-            if (en.Current != null)
-            {
-                GroupList = GetGroupMembership(GroupList, propertyName, en.Current.ToString(), recursive, ADServer, ADUsername, ADPassword);
-            }
-        }
-        return GroupList.ToArray();
-    }
-
-    private List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName, bool recursive, string ADServer, string ADUsername, string ADPassword)
-    {
-        DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + ADServer, ADUsername, ADPassword);
-        DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + distinguishedName + "))";
-        SearchResult one = directorySearcher.FindOne();
-        if (searchRoot != null)
-        {
-            searchRoot.Close();
-            searchRoot.Dispose();
-        }
-        directorySearcher.Dispose();
-        Group group = new Group(one, null);
-        if (!groups.Contains(group))
-        {
-            groups.Add(group);
-            if (recursive)
-            {
-                groups = GetGroupMembership(groups, propertyName, group.DistinguishedName, recursive, ADServer, ADUsername, ADPassword);
-            }
-        }
-        return groups;
     }
 }
 

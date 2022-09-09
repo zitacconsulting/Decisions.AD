@@ -30,6 +30,9 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool integratedAuthentication;
 
+        [WritableValue]
+        private bool nestedGroupMembership;        
+
         [PropertyClassification(new string[]{"Integrated Authentication"})]
         public bool IntegratedAuthentication
         {
@@ -43,6 +46,14 @@ namespace Zitac.AD.Steps
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
             }
+        }
+
+
+        [PropertyClassification(new string[]{"Nested Group Membership"})]
+        public bool NestedGroupMembership
+        {
+            get { return nestedGroupMembership; }
+            set { nestedGroupMembership = value; }
         }
 
             public DataDescription[] InputData
@@ -114,7 +125,7 @@ namespace Zitac.AD.Steps
                     throw new Exception(string.Format("Unable to find group with name: '{0}' in the AD", (object) GroupName));
                 }
 
-                Group Results = new Group(one, AdditionalAttributes);
+                Group Results = new Group(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership);
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("Result", (object) Results);

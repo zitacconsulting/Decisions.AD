@@ -38,6 +38,9 @@ namespace Zitac.AD.Steps
         private bool showOutcomeforNoResults;
 
         [WritableValue]
+        private bool nestedGroupMembership;
+
+        [WritableValue]
         private SearchParameters[] qParams;
 
         [PropertyClassification(8, "Use Integrated Authentication", new string[] {"Integrated Authentication"})]
@@ -61,6 +64,13 @@ namespace Zitac.AD.Steps
             get {return combineFiltersUsingAnd; }
             set {combineFiltersUsingAnd = value;}
 
+        }
+
+        [PropertyClassification(new string[]{"Nested Group Membership"})]
+        public bool NestedGroupMembership
+        {
+            get { return nestedGroupMembership; }
+            set { nestedGroupMembership = value; }
         }
 
         [PropertyClassification(1, "Show Outcome for No Results", new string[] {"Outcomes"})]
@@ -281,7 +291,7 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchResult Current in All)
                     {
-                        Results.Add(new Group(Current, AdditionalAttributes));
+                        Results.Add(new Group(Current, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership));
                     }
                 }
                 else if (ShowOutcomeforNoResults)

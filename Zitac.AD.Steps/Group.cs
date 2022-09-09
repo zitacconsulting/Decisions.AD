@@ -3,6 +3,7 @@ using System.DirectoryServices;
 using System.Runtime.Serialization;
 using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System.Collections.Generic;
+using System.Collections;
 using System;
 using System.Runtime;
 
@@ -41,11 +42,14 @@ namespace Zitac.AD.Steps;
 
     [DataMember]
     public DateTime WhenCreated { get; set; }
+
+    [DataMember]
+    public Group[] MemberOf { get; set; }
     
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
-    public Group(SearchResult entry, string[] AdditionalAttributes)
+    public Group(SearchResult entry, string[] AdditionalAttributes, string ADServer, string ADUsername, string ADPassword, bool recursive)
     {
       this.SamAccountName = this.GetStringProperty(entry, "samaccountname");
       this.Description = this.GetStringProperty(entry, "description");
@@ -57,6 +61,9 @@ namespace Zitac.AD.Steps;
       this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
       this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
       this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
+
+      GroupHelper gr = new GroupHelper(); 
+      this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
 
       if(AdditionalAttributes != null)
       {
@@ -180,5 +187,51 @@ namespace Zitac.AD.Steps;
       }
     return (System.Byte[]) null;
     }
-  }
 
+  }
+public class GroupHelper {
+    public Group[] GetMembership(SearchResult entry, string propertyName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    {
+        ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
+        IEnumerator en = ValueCollection.GetEnumerator();
+
+        List<Group> GroupList = new List<Group>();
+
+        while (en.MoveNext())
+        {
+            if (en.Current != null)
+            {
+                GroupList = GetGroupMembership(GroupList, propertyName, en.Current.ToString(), recursive, ADServer, ADUsername, ADPassword);
+            }
+        }
+        return GroupList.ToArray();
+    }
+
+    public List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    {
+        DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + ADServer, ADUsername, ADPassword);
+        DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
+        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + distinguishedName + "))";
+        SearchResult one = directorySearcher.FindOne();
+        if (searchRoot != null)
+        {
+            searchRoot.Close();
+            searchRoot.Dispose();
+        }
+        directorySearcher.Dispose();
+        Group group = new Group(one, null, ADServer, ADUsername, ADPassword, recursive);
+        if (!groups.Contains(group))
+        {
+            groups.Add(group);
+            if (recursive)
+            {
+              foreach(Group SubGroup in group.MemberOf )
+              {
+                  groups = GetGroupMembership(groups, propertyName, SubGroup.DistinguishedName, recursive, ADServer, ADUsername, ADPassword);
+              }
+                
+            }
+        }
+        return groups;
+    }
+}
