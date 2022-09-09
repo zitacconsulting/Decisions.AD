@@ -3,6 +3,7 @@ using System.DirectoryServices;
 using System.Runtime.Serialization;
 using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System.Collections.Generic;
+using System.Collections;
 using System;
 using System.Runtime;
 
@@ -133,10 +134,15 @@ public class User
     
     [DataMember]
     public bool AccountEnabled { get; set; }
+
+    [DataMember]
+    public Group[] Groups { get; set; }
     
 
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
+
+    private string adString = "";
 
     public User(SearchResult entry, string[] AdditionalAttributes)
     {
@@ -181,6 +187,8 @@ public class User
         this.LogonCount = this.GetIntProperty(entry, "logonCount");
         this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
         this.AccountEnabled = this.IsEnabled(entry);
+
+        this.Groups = this.GetMembership(entry, "memberOf");
   
 
         if (AdditionalAttributes != null)
@@ -316,6 +324,59 @@ public class User
                 return !Convert.ToBoolean(flags & 0x0002);
             }
             return new bool();
+    }
+
+    private Group[] GetMembership(SearchResult entry, string propertyName, bool recursive = false){
+
+        
+        
+        ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
+        IEnumerator en = ValueCollection.GetEnumerator();
+
+        ArrayList valuesCollection = null;
+
+        List<Group> GroupList = null;
+
+        while(en.MoveNext())
+        {
+            if (en.Current != null)
+            {
+                DirectoryEntry group = new DirectoryEntry(en.Current.ToString());
+                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
+                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
+                directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)" + Filter + ")";
+                //Group GroupResult = new Group(, AdditionalAttributes);
+
+                GroupList.Add(group);
+                if (recursive)
+                {
+                    AttributeValuesMultiString(attributeName, "LDAP://" + en.Current.ToString(), valuesCollection, true);
+                }
+            
+            }
+        }
+    }
+
+    private List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName){
+        ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
+        IEnumerator en = ValueCollection.GetEnumerator();
+
+        ArrayList valuesCollection = null;
+
+        while(en.MoveNext())
+        {
+            if (en.Current != null)
+            {
+                if (!valuesCollection.Contains(en.Current.ToString()))
+                {
+                    valuesCollection.Add(en.Current.ToString());
+                    if (recursive)
+                    {
+                        AttributeValuesMultiString(attributeName, "LDAP://" + en.Current.ToString(), valuesCollection, true);
+                    }
+                }
+            }
+        }
     }
 }
 
