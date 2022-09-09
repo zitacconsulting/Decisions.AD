@@ -345,7 +345,7 @@ public class User
     {
         DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + ADServer, ADUsername, ADPassword);
         DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(dn=" + distinguishedName + ")))";
+        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + distinguishedName + ")))";
         SearchResult one = directorySearcher.FindOne();
         if (searchRoot != null)
         {
