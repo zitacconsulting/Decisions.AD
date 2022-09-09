@@ -15,64 +15,64 @@ public class User
 
     [DataMember]
     public string LoginNamePreWin2000 { get; set; }
-    
+
     [DataMember]
     public string LoginNameUPN { get; set; }
-    
+
     [DataMember]
     public string FirstName { get; set; }
-    
+
     [DataMember]
     public string LastName { get; set; }
-    
+
     [DataMember]
     public string Initials { get; set; }
 
     [DataMember]
     public string DisplayName { get; set; }
-    
+
     [DataMember]
     public string Office { get; set; }
-    
+
     [DataMember]
     public string TelephoneNumber { get; set; }
-    
+
     [DataMember]
     public string Password { get; set; }
-    
+
     [DataMember]
     public string Description { get; set; }
-    
+
     [DataMember]
     public string EmailAddress { get; set; }
-    
+
     [DataMember]
     public string WebPage { get; set; }
-    
+
     [DataMember]
-    public DateTime AccountExpires { get; set;}
+    public DateTime AccountExpires { get; set; }
 
     [DataMember]
     public string Street { get; set; }
-    
+
     [DataMember]
     public string POBox { get; set; }
-    
+
     [DataMember]
     public string City { get; set; }
-    
+
     [DataMember]
     public string StateProvince { get; set; }
-    
+
     [DataMember]
     public string ZipPostalCode { get; set; }
-    
+
     [DataMember]
     public string CountryRegion { get; set; }
-    
+
     [DataMember]
     public string HomeFolder { get; set; }
-    
+
     [DataMember]
     public string HomeFolderDriveLetter { get; set; }
 
@@ -86,19 +86,19 @@ public class User
     public string Department { get; set; }
     [DataMember]
     public string JobTitle { get; set; }
-    
+
     [DataMember]
     public string Company { get; set; }
-    
+
     [DataMember]
     public string ManagerDN { get; set; }
 
     [DataMember]
     public string EmployeeID { get; set; }
-    
+
     [DataMember]
     public string EmployeeNumber { get; set; }
-    
+
     [DataMember]
     public string EmployeeType { get; set; }
 
@@ -131,20 +131,18 @@ public class User
 
     [DataMember]
     public Int64 uSNChanged { get; set; }
-    
+
     [DataMember]
     public bool AccountEnabled { get; set; }
 
     [DataMember]
     public Group[] Groups { get; set; }
-    
+
 
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
-    private string adString = "";
-
-    public User(SearchResult entry, string[] AdditionalAttributes)
+    public User(SearchResult entry, string[] AdditionalAttributes, string ADServer, string ADUsername, string ADPassword, bool recursive)
     {
 
         this.LoginNamePreWin2000 = this.GetStringProperty(entry, "sAMAccountName");
@@ -188,8 +186,7 @@ public class User
         this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
         this.AccountEnabled = this.IsEnabled(entry);
 
-        this.Groups = this.GetMembership(entry, "memberOf");
-  
+        this.Groups = this.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
 
         if (AdditionalAttributes != null)
         {
@@ -315,21 +312,20 @@ public class User
         return (System.Byte[])null;
     }
 
-    private bool IsEnabled(SearchResult entry) {
-            ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
-            if (property != null && property.Count != 0)
-            {
-                int flags = (int)property[0];
+    private bool IsEnabled(SearchResult entry)
+    {
+        ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
+        if (property != null && property.Count != 0)
+        {
+            int flags = (int)property[0];
 
-                return !Convert.ToBoolean(flags & 0x0002);
-            }
-            return new bool();
+            return !Convert.ToBoolean(flags & 0x0002);
+        }
+        return new bool();
     }
 
-    private Group[] GetMembership(SearchResult entry, string propertyName, bool recursive = false){
-
-        
-        
+    private Group[] GetMembership(SearchResult entry, string propertyName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    {
         ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
         IEnumerator en = ValueCollection.GetEnumerator();
 
@@ -337,46 +333,38 @@ public class User
 
         List<Group> GroupList = null;
 
-        while(en.MoveNext())
+        while (en.MoveNext())
         {
             if (en.Current != null)
             {
-                DirectoryEntry group = new DirectoryEntry(en.Current.ToString());
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)" + Filter + ")";
-                //Group GroupResult = new Group(, AdditionalAttributes);
-
-                GroupList.Add(group);
-                if (recursive)
-                {
-                    AttributeValuesMultiString(attributeName, "LDAP://" + en.Current.ToString(), valuesCollection, true);
-                }
-            
+                GroupList = GetGroupMembership(GroupList, propertyName, en.Current.ToString(), recursive, ADServer, ADUsername, ADPassword);
             }
         }
+        return GroupList.ToArray();
     }
 
-    private List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName){
-        ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
-        IEnumerator en = ValueCollection.GetEnumerator();
-
-        ArrayList valuesCollection = null;
-
-        while(en.MoveNext())
+    private List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    {
+        DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + ADServer, ADUsername, ADPassword);
+        DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
+        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(dn=" + distinguishedName + ")))";
+        SearchResult one = directorySearcher.FindOne();
+        if (searchRoot != null)
         {
-            if (en.Current != null)
+            searchRoot.Close();
+            searchRoot.Dispose();
+        }
+        directorySearcher.Dispose();
+        Group group = new Group(one, null);
+        if (!groups.Contains(group))
+        {
+            groups.Add(group);
+            if (recursive)
             {
-                if (!valuesCollection.Contains(en.Current.ToString()))
-                {
-                    valuesCollection.Add(en.Current.ToString());
-                    if (recursive)
-                    {
-                        AttributeValuesMultiString(attributeName, "LDAP://" + en.Current.ToString(), valuesCollection, true);
-                    }
-                }
+                groups = GetGroupMembership(groups, propertyName, group.DistinguishedName, recursive, ADServer, ADUsername, ADPassword);
             }
         }
+        return groups;
     }
 }
 

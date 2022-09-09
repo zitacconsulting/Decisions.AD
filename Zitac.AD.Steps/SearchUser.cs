@@ -40,6 +40,9 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private SearchParameters[] qParams;
 
+        [WritableValue]
+        private bool nestedGroupMembership;
+
         [PropertyClassification(8, "Use Integrated Authentication", new string[] {"Integrated Authentication"})]
         public bool IntegratedAuthentication
         {
@@ -73,6 +76,13 @@ namespace Zitac.AD.Steps
                 this.OnPropertyChanged("OutcomeScenarios");
             }
 
+        }
+
+        [PropertyClassification(new string[]{"Nested Group Membership"})]
+        public bool NestedGroupMembership
+        {
+            get { return nestedGroupMembership; }
+            set { nestedGroupMembership = value; }
         }
 
         [PropertyClassification(10, "Search Criteria", new string[] {"Search Definition"})]
@@ -282,7 +292,7 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchResult Current in All)
                     {
-                        Results.Add(new User(Current, AdditionalAttributes));
+                        Results.Add(new User(Current, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership));
                     }
                 }
                 else if (ShowOutcomeforNoResults)

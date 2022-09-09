@@ -30,6 +30,12 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool integratedAuthentication;
 
+        [WritableValue]
+        private bool nestedGroupMembership;
+
+        [WritableValue]
+        private bool showOutcomeforNoResults;
+
         [PropertyClassification(new string[]{"Integrated Authentication"})]
         public bool IntegratedAuthentication
         {
@@ -43,6 +49,25 @@ namespace Zitac.AD.Steps
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
             }
+        }
+
+        [PropertyClassification(1, "Show Outcome for No Results", new string[] {"Outcomes"})]
+        public bool ShowOutcomeforNoResults
+        {
+            get {return showOutcomeforNoResults; }
+            set 
+            {
+                showOutcomeforNoResults = value;
+                this.OnPropertyChanged("OutcomeScenarios");
+            }
+
+        }
+
+        [PropertyClassification(new string[]{"Nested Group Membership"})]
+        public bool NestedGroupMembership
+        {
+            get { return nestedGroupMembership; }
+            set { nestedGroupMembership = value; }
         }
 
             public DataDescription[] InputData
@@ -64,11 +89,14 @@ namespace Zitac.AD.Steps
     
             public override OutcomeScenarioData[] OutcomeScenarios {
                 get {
-
-                    return new[] {
-                    new OutcomeScenarioData("Done", new DataDescription(typeof(User), "Result")),
-                    new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")), 
-                }; 
+                    List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
+                    
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(User), "Result",true)));
+                    if (ShowOutcomeforNoResults) {
+                        outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
+                    }
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
+                    return outcomeScenarioDataList.ToArray();
                 }
             }
 
@@ -114,7 +142,7 @@ namespace Zitac.AD.Steps
                     throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object) UserName));
                 }
 
-                User Results = new User(one, AdditionalAttributes);
+                User Results = new User(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership);
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("Result", (object) Results);
