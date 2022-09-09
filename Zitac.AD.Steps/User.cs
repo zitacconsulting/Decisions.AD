@@ -329,9 +329,7 @@ public class User
         ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
         IEnumerator en = ValueCollection.GetEnumerator();
 
-        ArrayList valuesCollection = null;
-
-        List<Group> GroupList = null;
+        List<Group> GroupList = new List<Group>();
 
         while (en.MoveNext())
         {
