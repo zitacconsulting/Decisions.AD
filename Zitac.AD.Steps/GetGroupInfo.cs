@@ -125,7 +125,7 @@ namespace Zitac.AD.Steps
                     throw new Exception(string.Format("Unable to find group with name: '{0}' in the AD", (object) GroupName));
                 }
 
-                Group Results = new Group(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership);
+                Group Results = new Group(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership, null);
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("Result", (object) Results);

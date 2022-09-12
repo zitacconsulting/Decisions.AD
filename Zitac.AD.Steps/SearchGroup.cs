@@ -291,7 +291,7 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchResult Current in All)
                     {
-                        Results.Add(new Group(Current, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership));
+                        Results.Add(new Group(Current, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership, null));
                     }
                 }
                 else if (ShowOutcomeforNoResults)

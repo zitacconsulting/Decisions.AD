@@ -49,7 +49,7 @@ namespace Zitac.AD.Steps;
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
-    public Group(SearchResult entry, string[] AdditionalAttributes, string ADServer, string ADUsername, string ADPassword, bool recursive)
+    public Group(SearchResult entry, string[] AdditionalAttributes, string ADServer, string ADUsername, string ADPassword, bool recursive, List<String> PreviouslyProcessedDN)
     {
       this.SamAccountName = this.GetStringProperty(entry, "samaccountname");
       this.Description = this.GetStringProperty(entry, "description");
@@ -63,7 +63,7 @@ namespace Zitac.AD.Steps;
       this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
 
       GroupHelper gr = new GroupHelper(); 
-      this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
+      this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword, PreviouslyProcessedDN);
 
       if(AdditionalAttributes != null)
       {
@@ -190,7 +190,7 @@ namespace Zitac.AD.Steps;
 
   }
 public class GroupHelper {
-    public Group[] GetMembership(SearchResult entry, string propertyName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    public Group[] GetMembership(SearchResult entry, string propertyName, bool recursive, string ADServer, string ADUsername, string ADPassword, List<String> PreviouslyProcessedDN)
     {
         ResultPropertyValueCollection ValueCollection = entry.Properties[propertyName];
         IEnumerator en = ValueCollection.GetEnumerator();
@@ -199,15 +199,16 @@ public class GroupHelper {
 
         while (en.MoveNext())
         {
-            if (en.Current != null)
+            if (en.Current != null & !PreviouslyProcessedDN.Contains(en.Current.ToString().ToUpper()))
             {
-                GroupList = GetGroupMembership(GroupList, propertyName, en.Current.ToString(), recursive, ADServer, ADUsername, ADPassword);
+                PreviouslyProcessedDN.Add(en.Current.ToString().ToUpper());
+                GroupList = GetGroupMembership(GroupList, propertyName, en.Current.ToString(), recursive, ADServer, ADUsername, ADPassword, PreviouslyProcessedDN);
             }
         }
         return GroupList.ToArray();
     }
 
-    public List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName, bool recursive, string ADServer, string ADUsername, string ADPassword)
+    public List<Group> GetGroupMembership(List<Group> groups, string propertyName, string distinguishedName, bool recursive, string ADServer, string ADUsername, string ADPassword, List<String> PreviouslyProcessedDN)
     {
         DirectoryEntry searchRoot = new DirectoryEntry("LDAP://" + ADServer, ADUsername, ADPassword);
         DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
@@ -219,7 +220,7 @@ public class GroupHelper {
             searchRoot.Dispose();
         }
         directorySearcher.Dispose();
-        Group group = new Group(one, null, ADServer, ADUsername, ADPassword, recursive);
+        Group group = new Group(one, null, ADServer, ADUsername, ADPassword, recursive, null);
         if (!groups.Contains(group))
         {
             groups.Add(group);
@@ -227,7 +228,7 @@ public class GroupHelper {
             {
               foreach(Group SubGroup in group.MemberOf )
               {
-                  groups = GetGroupMembership(groups, propertyName, SubGroup.DistinguishedName, recursive, ADServer, ADUsername, ADPassword);
+                  groups = GetGroupMembership(groups, propertyName, SubGroup.DistinguishedName, recursive, ADServer, ADUsername, ADPassword, PreviouslyProcessedDN);
               }
                 
             }
