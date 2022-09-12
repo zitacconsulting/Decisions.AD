@@ -187,7 +187,7 @@ public class User
         this.AccountEnabled = this.IsEnabled(entry);
 
         GroupHelper gr = new GroupHelper(); 
-        this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword);
+        this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword, null);
 
         if (AdditionalAttributes != null)
         {
