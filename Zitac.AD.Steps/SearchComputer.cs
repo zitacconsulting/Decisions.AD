@@ -135,7 +135,19 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchParameters CurrParameter in ParametersList)
                     {
-                        dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(object)), CurrParameter.Alias));
+                        if (CurrParameter.DataType == "Date") {
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), CurrParameter.Alias));
+                        }
+                        else if (CurrParameter.DataType == "Int32") {
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int32)), CurrParameter.Alias));
+                        }
+                        else if (CurrParameter.DataType == "Int64") {
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int64)), CurrParameter.Alias));
+                        }
+                        else {
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter.Alias));
+                        }
+                        
                     }
                 }
 

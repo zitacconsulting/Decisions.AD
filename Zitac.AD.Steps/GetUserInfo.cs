@@ -31,9 +31,6 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
-        private bool nestedGroupMembership;
-
-        [WritableValue]
         private bool showOutcomeforNoResults;
 
         [PropertyClassification(new string[]{"Integrated Authentication"})]
@@ -61,13 +58,6 @@ namespace Zitac.AD.Steps
                 this.OnPropertyChanged("OutcomeScenarios");
             }
 
-        }
-
-        [PropertyClassification(new string[]{"Nested Group Membership"})]
-        public bool NestedGroupMembership
-        {
-            get { return nestedGroupMembership; }
-            set { nestedGroupMembership = value; }
         }
 
             public DataDescription[] InputData
@@ -143,7 +133,7 @@ namespace Zitac.AD.Steps
                     return new ResultData("No Results");
                 }
 
-                User Results = new User(one, AdditionalAttributes, ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword, nestedGroupMembership);
+                User Results = new User(one, AdditionalAttributes);
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("Result", (object) Results);

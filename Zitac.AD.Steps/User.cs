@@ -136,13 +136,9 @@ public class User
     public bool AccountEnabled { get; set; }
 
     [DataMember]
-    public Group[] MemberOf { get; set; }
-
-
-    [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
-    public User(SearchResult entry, string[] AdditionalAttributes, string ADServer, string ADUsername, string ADPassword, bool recursive)
+    public User(SearchResult entry, string[] AdditionalAttributes)
     {
 
         this.LoginNamePreWin2000 = this.GetStringProperty(entry, "sAMAccountName");
@@ -185,9 +181,6 @@ public class User
         this.LogonCount = this.GetIntProperty(entry, "logonCount");
         this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
         this.AccountEnabled = this.IsEnabled(entry);
-
-        GroupHelper gr = new GroupHelper(); 
-        this.MemberOf = gr.GetMembership(entry, "memberOf", recursive, ADServer, ADUsername, ADPassword, null);
 
         if (AdditionalAttributes != null)
         {

@@ -35,6 +35,24 @@ public class SearchParameters
 
     [WritableValue]
     [DataMember]
+    [PropertyClassification("Field Data Type", 2)]
+    [SelectStringEditor("DataTypes")]
+    public string DataType { get; set; }
+
+    [PropertyHidden]
+    public string[] DataTypes
+    {
+      get
+      {
+          return new[] {
+                  "String", "Date", "Int32", "Int64"
+          };
+      }
+      set { return; }
+    }
+
+    [WritableValue]
+    [DataMember]
     [PropertyClassification("Field Name", 1)]
     public string FieldName
     {

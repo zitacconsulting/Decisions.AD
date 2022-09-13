@@ -7,6 +7,7 @@ using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
 using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.DirectoryServices;
 using System.Linq;
 using System.Net;
@@ -15,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
+using System.Security.Principal;
 using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
@@ -22,16 +24,16 @@ using System.ComponentModel;
 
 namespace Zitac.AD.Steps
 {
-    [AutoRegisterStep("Get Group Info", "Integration", "Active Directory", "Zitac", "Group")]
+    [AutoRegisterStep("Get User Group Memberships", "Integration", "Active Directory", "Zitac", "User")]
     [Writable]
-    public class GetGroupInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class GetUserGroupMembership : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
     {
      
         [WritableValue]
         private bool integratedAuthentication;
 
         [WritableValue]
-        private bool nestedGroupMembership;        
+        private bool showOutcomeforNoResults;
 
         [PropertyClassification(new string[]{"Integrated Authentication"})]
         public bool IntegratedAuthentication
@@ -48,12 +50,16 @@ namespace Zitac.AD.Steps
             }
         }
 
-
-        [PropertyClassification(new string[]{"Nested Group Membership"})]
-        public bool NestedGroupMembership
+        [PropertyClassification(1, "Show Outcome for No Results", new string[] {"Outcomes"})]
+        public bool ShowOutcomeforNoResults
         {
-            get { return nestedGroupMembership; }
-            set { nestedGroupMembership = value; }
+            get {return showOutcomeforNoResults; }
+            set 
+            {
+                showOutcomeforNoResults = value;
+                this.OnPropertyChanged("OutcomeScenarios");
+            }
+
         }
 
             public DataDescription[] InputData
@@ -67,7 +73,7 @@ namespace Zitac.AD.Steps
                             }
                             
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Group Name"));
+                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "User Name"));
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Additional Attributes", true, true, true));
                             return dataDescriptionList.ToArray();                                              
                         }
@@ -75,11 +81,14 @@ namespace Zitac.AD.Steps
     
             public override OutcomeScenarioData[] OutcomeScenarios {
                 get {
-
-                    return new[] {
-                    new OutcomeScenarioData("Done", new DataDescription(typeof(Group), "Result")),
-                    new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")), 
-                }; 
+                    List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
+                    
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(Group), "Found Groups",true)));
+                    if (ShowOutcomeforNoResults) {
+                        outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
+                    }
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
+                    return outcomeScenarioDataList.ToArray();
                 }
             }
 
@@ -87,7 +96,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string GroupName = data.Data["Group Name"] as string;
+            string UserName = data.Data["User Name"] as string;
             string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
 
             Credentials ADCredentials = new Credentials();
@@ -109,7 +118,7 @@ namespace Zitac.AD.Steps
                 string baseLdapPath = string.Format("LDAP://{0}", (object) ADServer);
                 DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
                 DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectCategory=group)(objectClass=group)(|(sAMAccountName=" + GroupName + ")(distinguishedName=" + GroupName + ")))";
+                directorySearcher.Filter = "(&(objectClass=user)(|(sAMAccountName=" + UserName + ")(distinguishedname=" + UserName + ")))";
 
                 SearchResult one = directorySearcher.FindOne();
 
@@ -122,16 +131,45 @@ namespace Zitac.AD.Steps
 
                 if (one == null)
                 {
-                    throw new Exception(string.Format("Unable to find group with name: '{0}' in the AD", (object) GroupName));
+                    if(ShowOutcomeforNoResults)
+                    {
+                        return new ResultData("No Results");
+                    }
+                    throw new Exception(string.Format("Unable to find user with name: '{0}' in the AD", (object) UserName));
+                    
                 }
 
-                Group Results = new Group(one, AdditionalAttributes);
+                List<Group> GroupList = new List<Group>();
+
+
+                string PrimaryGroupDn = GetUserPrimaryGroup((DirectoryEntry) one.GetDirectoryEntry());
+                        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + PrimaryGroupDn + "))";
+                        SearchResult FoundPrimaryGroup = directorySearcher.FindOne();
+                        Group primarygroup = new Group(FoundPrimaryGroup, AdditionalAttributes);
+                        GroupList.Add(primarygroup);
+
+                ResultPropertyValueCollection ValueCollection = one.Properties["memberOf"];
+                IEnumerator en = ValueCollection.GetEnumerator();
+                
+                while (en.MoveNext())
+                {
+                        directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + en.Current.ToString() + "))";
+                        SearchResult FoundGroup = directorySearcher.FindOne();
+                        Group group = new Group(FoundGroup, AdditionalAttributes);
+                        if (!GroupList.Contains(group))
+                        {
+                            GroupList.Add(group);
+                        }
+                }
+
+                if (GroupList.Count == 0 && ShowOutcomeforNoResults)
+                {
+                    return new ResultData("No Results");
+                }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Result", (object) Results);
+                dictionary.Add("Found Groups", (object) GroupList.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>) dictionary);
-
-
 
             }
             catch (Exception e)
@@ -147,5 +185,23 @@ namespace Zitac.AD.Steps
 
             }
         }
+
+    private static string GetUserPrimaryGroup(DirectoryEntry de) {
+    de.RefreshCache(new[] {"primaryGroupID", "objectSid"});
+
+    //Get the user's SID as a string
+    var sid = new SecurityIdentifier((byte[])de.Properties["objectSid"].Value, 0).ToString();
+
+    //Replace the RID portion of the user's SID with the primaryGroupId
+    //so we're left with the group's SID
+    sid = sid.Remove(sid.LastIndexOf("-", StringComparison.Ordinal) + 1);
+    sid = sid + de.Properties["primaryGroupId"].Value;
+
+    //Find the group by its SID
+    var group = new DirectoryEntry($"LDAP://<SID={sid}>");
+    group.RefreshCache(new [] {"distinguishedname"});
+
+    return group.Properties["distinguishedname"].Value as string;
+}
     }
 }
