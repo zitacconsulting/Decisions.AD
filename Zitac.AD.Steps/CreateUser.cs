@@ -127,6 +127,7 @@ namespace Zitac.AD.Steps
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(bool?)), "Must Change Password On Next Login") { Categories = new string[] { "User Data", "Flags" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name (Pre-Win 2000)") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Login Name (UPN)") { Categories = new string[] { "User Data" } });
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Common Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "First Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Last Name") { Categories = new string[] { "User Data" } });
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Initials") { Categories = new string[] { "User Data" } });
@@ -234,7 +235,7 @@ namespace Zitac.AD.Steps
 
                 DirectoryEntry ouEntry = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
 
-                DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + data.Data["First Name"] + " " + data.Data["Last Name"], "user");
+                DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + data.Data["Common Name"], "user");
                 childEntry.Properties["sAMAccountName"].Value = sAMAccountName;
                 childEntry.Properties["userPrincipalName"].Value = LoginName;
                 if (data.Data["First Name"] != null && data.Data["First Name"].ToString().Length != 0) { childEntry.Properties["givenName"].Value = (string)data.Data["First Name"]; }
