@@ -81,7 +81,7 @@ namespace Zitac.AD.Steps
                 get {
                     List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
                     
-                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(User), "Result",false)));
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result",false)));
                     if (ShowOutcomeforNoResults) {
                         outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
                     }
