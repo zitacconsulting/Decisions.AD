@@ -138,6 +138,9 @@ public class User
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
+    public User()
+    {
+    }
     public User(SearchResult entry, string[] AdditionalAttributes)
     {
 

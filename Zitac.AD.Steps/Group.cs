@@ -46,6 +46,10 @@ public class Group
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
+    public Group()
+    {
+        
+    }
     public Group(SearchResult entry, string[] AdditionalAttributes)
     {
         this.SamAccountName = this.GetStringProperty(entry, "samaccountname");

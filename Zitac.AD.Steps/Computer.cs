@@ -74,7 +74,10 @@ namespace Zitac.AD.Steps;
 
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
-
+    public Computer()
+    {
+      
+    }
     public Computer(SearchResult entry, string[] AdditionalAttributes)
     {
       this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
