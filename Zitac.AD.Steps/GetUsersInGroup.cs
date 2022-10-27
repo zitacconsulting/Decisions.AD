@@ -153,20 +153,34 @@ namespace Zitac.AD.Steps
                         return new ResultData("No Results");
                     }
                     throw new Exception(string.Format("Unable to find group with name: '{0}' in the AD", (object)GroupName));
-
                 }
-                UserAndGroupList UserAndGroupList = new UserAndGroupList();
-                UserAndGroupList.GroupList = new List<Group>();
-                UserAndGroupList.UserList = new List<User>();
+
+
+                List<User> UserList = new List<User>();
 
                 string SID = new SecurityIdentifier((byte[])one.Properties["objectSid"][0], 0).ToString();
                 string RID = SID.Substring(SID.LastIndexOf("-", StringComparison.Ordinal) + 1);
+                if (RecursiveSearch)
+                {
+                    directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf:1.2.840.113556.1.4.1941:=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
+                }
+                else
+                {
+                    directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
+                }
+                SearchResultCollection UserGroupMembers = directorySearcher.FindAll();
 
-                //string PrimaryGroupDn = GetUserPrimaryGroup((DirectoryEntry) one.GetDirectoryEntry());
-                UserAndGroupList = GetUserGroupMembers(UserAndGroupList, one.Properties["distinguishedname"][0].ToString(),RID, directorySearcher, AdditionalAttributes, RecursiveSearch);
+                if (UserGroupMembers != null && UserGroupMembers.Count != 0)
+                {
+                    foreach (SearchResult Current in UserGroupMembers)
+                    {
+
+                        UserList.Add(new User(Current, AdditionalAttributes));
+                    }
+                }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Users", (object)UserAndGroupList.UserList.ToArray());
+                dictionary.Add("Users", (object)UserList.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>)dictionary);
 
             }
@@ -184,68 +198,5 @@ namespace Zitac.AD.Steps
             }
         }
 
-        private static UserAndGroupList GetUserGroupMembers(UserAndGroupList UserAndGroupList, string DN, string RID, DirectorySearcher directorySearcher, string[] AdditionalAttributes, Boolean RecursiveSearch)
-        {
-
-            directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(memberOf=" + DN + "))";
-            SearchResultCollection GroupGroupMembers = directorySearcher.FindAll();
-
-            if (GroupGroupMembers != null && GroupGroupMembers.Count != 0)
-            {
-                foreach (SearchResult Current in GroupGroupMembers)
-                {
-                    if (!UserAndGroupList.GroupList.Any(i => i.DistinguishedName == Current.Properties["distinguishedname"][0].ToString()))
-                    {
-                        UserAndGroupList.GroupList.Add(new Group(Current, null));
-                        if (RecursiveSearch)
-                        {
-                            string SID = new SecurityIdentifier((byte[])Current.Properties["objectSid"][0], 0).ToString();
-                            string CurrentRID = SID.Substring(SID.LastIndexOf("-", StringComparison.Ordinal) + 1);
-                            UserAndGroupList = GetUserGroupMembers(UserAndGroupList, Current.Properties["distinguishedname"][0].ToString(), RID, directorySearcher, AdditionalAttributes, RecursiveSearch);
-                        }
-                    }
-                }
-            }
-
-            directorySearcher.Filter = "(&(objectClass=user)(objectCategory=person)(|(memberOf=" + DN + ")(primaryGroupId=" + RID + ")))";
-            SearchResultCollection UserGroupMembers = directorySearcher.FindAll();
-
-            if (UserGroupMembers != null && UserGroupMembers.Count != 0)
-            {
-                foreach (SearchResult Current in UserGroupMembers)
-                {
-                    if (!UserAndGroupList.UserList.Any(i => i.DistinguishedName == Current.Properties["distinguishedname"][0].ToString()))
-                    {
-                        UserAndGroupList.UserList.Add(new User(Current, AdditionalAttributes));
-                    }
-                }
-            }
-
-            return UserAndGroupList;
-        }
-
-        private static string GetUserPrimaryGroup(DirectoryEntry de)
-        {
-            de.RefreshCache(new[] { "primaryGroupID", "objectSid" });
-
-            //Get the user's SID as a string
-            var sid = new SecurityIdentifier((byte[])de.Properties["objectSid"].Value, 0).ToString();
-
-            //Replace the RID portion of the user's SID with the primaryGroupId
-            //so we're left with the group's SID
-            sid = sid.Remove(sid.LastIndexOf("-", StringComparison.Ordinal) + 1);
-            sid = sid + de.Properties["primaryGroupId"].Value;
-
-            //Find the group by its SID
-            var group = new DirectoryEntry($"LDAP://<SID={sid}>");
-            group.RefreshCache(new[] { "distinguishedname" });
-
-            return group.Properties["distinguishedname"].Value as string;
-        }
-    }
-
-    public class UserAndGroupList {
-        public List<User> UserList;
-        public List<Group> GroupList;
     }
 }
