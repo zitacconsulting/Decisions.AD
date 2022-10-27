@@ -162,7 +162,8 @@ namespace Zitac.AD.Steps
                 string RID = SID.Substring(SID.LastIndexOf("-", StringComparison.Ordinal) + 1);
                 if (RecursiveSearch)
                 {
-                    directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf:1.2.840.113556.1.4.1941:=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
+                    directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(memberOf:1.2.840.113556.1.4.1941:=" + one.Properties["distinguishedname"][0].ToString() + "))";
+                    //directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf:1.2.840.113556.1.4.1941:=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
                 }
                 else
                 {
