@@ -168,8 +168,8 @@ namespace Zitac.AD.Steps
                 {
                     directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
                 }
-                directorySearcher.PageSize = 1000; 
-                
+                directorySearcher.PageSize = int.MaxValue; 
+
                 SearchResultCollection UserGroupMembers = directorySearcher.FindAll();
 
                 if (UserGroupMembers != null && UserGroupMembers.Count != 0)
