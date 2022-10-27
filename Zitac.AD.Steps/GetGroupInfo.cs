@@ -29,9 +29,7 @@ namespace Zitac.AD.Steps
      
         [WritableValue]
         private bool integratedAuthentication;
-
-        [WritableValue]
-        private bool nestedGroupMembership;        
+    
 
         [PropertyClassification(new string[]{"Integrated Authentication"})]
         public bool IntegratedAuthentication
@@ -48,13 +46,6 @@ namespace Zitac.AD.Steps
             }
         }
 
-
-        [PropertyClassification(new string[]{"Nested Group Membership"})]
-        public bool NestedGroupMembership
-        {
-            get { return nestedGroupMembership; }
-            set { nestedGroupMembership = value; }
-        }
 
             public DataDescription[] InputData
             {
