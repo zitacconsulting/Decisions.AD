@@ -155,17 +155,33 @@ namespace Zitac.AD.Steps
                     throw new Exception(string.Format("Unable to find group with name: '{0}' in the AD", (object)GroupName));
 
                 }
-                ComputerAndGroupList ComputerAndGroupList = new ComputerAndGroupList();
-                ComputerAndGroupList.GroupList = new List<Group>();
-                ComputerAndGroupList.ComputerList = new List<Computer>();
-                
+                List<Computer> ComputerList = new List<Computer>();
+
                 string SID = new SecurityIdentifier((byte[])one.Properties["objectSid"][0], 0).ToString();
                 string RID = SID.Substring(SID.LastIndexOf("-", StringComparison.Ordinal) + 1);
+                if (RecursiveSearch)
+                {
+                    directorySearcher.Filter = "(&(objectClass=computer)(|(memberOf:1.2.840.113556.1.4.1941:=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
+                }
+                else
+                {
+                    directorySearcher.Filter = "(&(objectClass=computer)(|(memberOf=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
+                }
 
-                ComputerAndGroupList = GetComputerGroupMembers(ComputerAndGroupList, one.Properties["distinguishedname"][0].ToString(), RID, directorySearcher, AdditionalAttributes, RecursiveSearch);
+                directorySearcher.PageSize = int.MaxValue;
+                SearchResultCollection ComputerGroupMembers = directorySearcher.FindAll();
+
+                if (ComputerGroupMembers != null && ComputerGroupMembers.Count != 0)
+                {
+                    foreach (SearchResult Current in ComputerGroupMembers)
+                    {
+                        ComputerList.Add(new Computer(Current, AdditionalAttributes));
+
+                    }
+                }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Computers", (object)ComputerAndGroupList.ComputerList.ToArray());
+                dictionary.Add("Computers", (object)ComputerList.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>)dictionary);
 
             }
@@ -179,72 +195,9 @@ namespace Zitac.AD.Steps
                     (object) ExceptionMessage
                 }
                 });
-
             }
-        }
-
-        private static ComputerAndGroupList GetComputerGroupMembers(ComputerAndGroupList ComputerAndGroupList, string DN, string RID, DirectorySearcher directorySearcher, string[] AdditionalAttributes, Boolean RecursiveSearch)
-        {
-
-            directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(memberOf=" + DN + "))";
-            SearchResultCollection GroupGroupMembers = directorySearcher.FindAll();
-
-            if (GroupGroupMembers != null && GroupGroupMembers.Count != 0)
-            {
-                foreach (SearchResult Current in GroupGroupMembers)
-                {
-                    if (!ComputerAndGroupList.GroupList.Any(i => i.DistinguishedName == Current.Properties["distinguishedname"][0].ToString()))
-                    {
-                        ComputerAndGroupList.GroupList.Add(new Group(Current, null));
-                        if (RecursiveSearch)
-                        {
-                            string SID = new SecurityIdentifier((byte[])Current.Properties["objectSid"][0], 0).ToString();
-                            string CurrentRID = SID.Substring(SID.LastIndexOf("-", StringComparison.Ordinal) + 1);
-                            ComputerAndGroupList = GetComputerGroupMembers(ComputerAndGroupList, Current.Properties["distinguishedname"][0].ToString(),CurrentRID, directorySearcher, AdditionalAttributes, RecursiveSearch);
-                        }
-                    }
-                }
-            }
-            
-            directorySearcher.Filter = "(&(objectClass=computer)(|(memberOf=" + DN + ")(primaryGroupId=" + RID + ")))";
-            SearchResultCollection ComputerGroupMembers = directorySearcher.FindAll();
-
-            if (ComputerGroupMembers != null && ComputerGroupMembers.Count != 0)
-            {
-                foreach (SearchResult Current in ComputerGroupMembers)
-                {
-                    if (!ComputerAndGroupList.ComputerList.Any(i => i.DistinguishedName == Current.Properties["distinguishedname"][0].ToString()))
-                    {
-                        ComputerAndGroupList.ComputerList.Add(new Computer(Current, AdditionalAttributes));
-                    }
-                }
-            }
-
-            return ComputerAndGroupList;
-        }
-
-        private static string GetUserPrimaryGroup(DirectoryEntry de)
-        {
-            de.RefreshCache(new[] { "primaryGroupID", "objectSid" });
-
-            //Get the user's SID as a string
-            var sid = new SecurityIdentifier((byte[])de.Properties["objectSid"].Value, 0).ToString();
-
-            //Replace the RID portion of the user's SID with the primaryGroupId
-            //so we're left with the group's SID
-            sid = sid.Remove(sid.LastIndexOf("-", StringComparison.Ordinal) + 1);
-            sid = sid + de.Properties["primaryGroupId"].Value;
-
-            //Find the group by its SID
-            var group = new DirectoryEntry($"LDAP://<SID={sid}>");
-            group.RefreshCache(new[] { "distinguishedname" });
-
-            return group.Properties["distinguishedname"].Value as string;
         }
     }
 
-    public class ComputerAndGroupList {
-        public List<Computer> ComputerList;
-        public List<Group> GroupList;
-    }
+
 }
