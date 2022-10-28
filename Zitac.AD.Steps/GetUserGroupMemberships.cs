@@ -198,7 +198,7 @@ namespace Zitac.AD.Steps
     sid = sid + de.Properties["primaryGroupId"].Value;
 
     //Find the group by its SID
-    var group = new DirectoryEntry($"LDAP://"+ ADServer + "/<SID={sid}>");
+    var group = new DirectoryEntry("LDAP://" + ADServer + "<SID=" + sid);
     group.RefreshCache(new [] {"distinguishedname"});
 
     return group.Properties["distinguishedname"].Value as string;
