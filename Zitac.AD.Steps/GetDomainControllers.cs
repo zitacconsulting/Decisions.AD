@@ -143,7 +143,7 @@ namespace Zitac.AD.Steps
                 
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("FoundUsers", (object) Results.ToArray());
+                dictionary.Add("DomainControllers", (object) Results.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>) dictionary);
 
 
