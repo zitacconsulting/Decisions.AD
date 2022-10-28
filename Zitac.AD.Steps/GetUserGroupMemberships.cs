@@ -142,7 +142,7 @@ namespace Zitac.AD.Steps
                 List<Group> GroupList = new List<Group>();
 
 
-                string PrimaryGroupDn = GetUserPrimaryGroup((DirectoryEntry) one.GetDirectoryEntry(), ADServer);
+                string PrimaryGroupDn = GetUserPrimaryGroup((DirectoryEntry) one.GetDirectoryEntry(), ADServer, ADCredentials.ADUsername, ADCredentials.ADPassword);
                         directorySearcher.Filter = "(&(objectClass=group)(objectCategory=group)(distinguishedname=" + PrimaryGroupDn + "))";
                         SearchResult FoundPrimaryGroup = directorySearcher.FindOne();
                         Group primarygroup = new Group(FoundPrimaryGroup, AdditionalAttributes);
@@ -186,7 +186,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-    private static string GetUserPrimaryGroup(DirectoryEntry de, string ADServer) {
+    private static string GetUserPrimaryGroup(DirectoryEntry de, string ADServer, string ADUsername, string ADPassword) {
     de.RefreshCache(new[] {"primaryGroupID", "objectSid"});
 
     //Get the user's SID as a string
@@ -198,7 +198,7 @@ namespace Zitac.AD.Steps
     sid = sid + de.Properties["primaryGroupId"].Value;
 
     //Find the group by its SID
-    var group = new DirectoryEntry("LDAP://" + ADServer + "/<SID=" + sid +">");
+    var group = new DirectoryEntry("LDAP://" + ADServer + "/<SID=" + sid +">", ADUsername, ADPassword);
     group.RefreshCache(new [] {"distinguishedname"});
 
     return group.Properties["distinguishedname"].Value as string;
