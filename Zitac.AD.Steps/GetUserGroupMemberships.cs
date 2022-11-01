@@ -191,6 +191,7 @@ namespace Zitac.AD.Steps
 
     //Get the user's SID as a string
     var sid = new SecurityIdentifier((byte[])de.Properties["objectSid"].Value, 0).ToString();
+    
 
     //Replace the RID portion of the user's SID with the primaryGroupId
     //so we're left with the group's SID
