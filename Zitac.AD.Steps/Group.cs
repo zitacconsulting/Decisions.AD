@@ -59,7 +59,10 @@ public class Group
         this.CN = this.GetStringProperty(entry, "cn");
         this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
         this.Name = this.GetStringProperty(entry, "name");
+        try {
         this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
+        }
+        catch{}
         this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
         this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
 
