@@ -172,7 +172,6 @@ namespace Zitac.AD.Steps
                 try
                 {
 
-                    //if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
                     if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
                     if (data.Data.ContainsKey("Description") && (data.Data["Description"]) == null) { childEntry.Properties["description"].Clear(); }
 
@@ -190,7 +189,7 @@ namespace Zitac.AD.Steps
                     else {
                         childEntry.InvokeSet("AccountDisabled", false);
                     }
-
+                    childEntry.CommitChanges();
 
                     string[] ParametersList = this.Attributes;
                     if (ParametersList != null && ParametersList.Length != 0)
