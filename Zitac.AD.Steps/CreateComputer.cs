@@ -159,52 +159,60 @@ namespace Zitac.AD.Steps
 
 
 
-                string baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)OU);
-
+            string baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)OU);
+            try
+            {
                 DirectoryEntry ouEntry = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
 
                 DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + ComputerName, "computer");
                 childEntry.Properties["sAMAccountName"].Value = (ComputerName + "$");
                 childEntry.CommitChanges();
-            
 
-            try {
-                
-                if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
-                if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0 ) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
-                if (data.Data.ContainsKey("Description") && (data.Data["Description"]) == null) {childEntry.Properties["description"].Clear();}
 
-                if (data.Data["Location"] != null && (data.Data["Location"]).ToString().Length != 0 ) { childEntry.Properties["location"].Value = (string)data.Data["Location"]; }
-                if (data.Data.ContainsKey("Location") && (data.Data["Location"]) == null) {childEntry.Properties["location"].Clear();}
-
-                if (data.Data["Managed By (DN)"] != null && (data.Data["Managed By (DN)"]).ToString().Length != 0 ) { childEntry.Properties["managedBy"].Value = (string)data.Data["Managed By (DN)"]; }
-                if (data.Data.ContainsKey("Managed By (DN)") && (data.Data["Managed By (DN)"]) == null) {childEntry.Properties["managedBy"].Clear();}
-
-                if ((bool?)data.Data["Account Disabled"] == true) {
-                        childEntry.InvokeSet("AccountDisabled", true);
-                      }
-                    else {
-                        childEntry.InvokeSet("AccountDisabled", false);
-                    }
-
-                childEntry.CommitChanges();
-
-                string[] ParametersList = this.Attributes;
-                if (ParametersList != null && ParametersList.Length != 0)
+                try
                 {
-                    foreach (string CurrParameter in ParametersList)
-                    {
-                        if (data.Data[CurrParameter] != null && (data.Data[CurrParameter]).ToString().Length != 0 ) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
-                        if (data.Data.ContainsKey(CurrParameter) && (data.Data[CurrParameter]) == null) {childEntry.Properties[CurrParameter].Clear();}
-                    }
+
+                    if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
+                    if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
+                    if (data.Data.ContainsKey("Description") && (data.Data["Description"]) == null) { childEntry.Properties["description"].Clear(); }
+
+                    if (data.Data["Location"] != null && (data.Data["Location"]).ToString().Length != 0) { childEntry.Properties["location"].Value = (string)data.Data["Location"]; }
+                    if (data.Data.ContainsKey("Location") && (data.Data["Location"]) == null) { childEntry.Properties["location"].Clear(); }
+
+                    if (data.Data["Managed By (DN)"] != null && (data.Data["Managed By (DN)"]).ToString().Length != 0) { childEntry.Properties["managedBy"].Value = (string)data.Data["Managed By (DN)"]; }
+                    if (data.Data.ContainsKey("Managed By (DN)") && (data.Data["Managed By (DN)"]) == null) { childEntry.Properties["managedBy"].Clear(); }
+
                     childEntry.CommitChanges();
+
+                    string[] ParametersList = this.Attributes;
+                    if (ParametersList != null && ParametersList.Length != 0)
+                    {
+                        foreach (string CurrParameter in ParametersList)
+                        {
+                            if (data.Data[CurrParameter] != null && (data.Data[CurrParameter]).ToString().Length != 0) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
+                            if (data.Data.ContainsKey(CurrParameter) && (data.Data[CurrParameter]) == null) { childEntry.Properties[CurrParameter].Clear(); }
+                        }
+                        childEntry.CommitChanges();
+                    }
+
+                    return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+
+
+
+
                 }
+                catch (Exception e)
+                {
+                    string ExceptionMessage = e.ToString();
+                    return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) ExceptionMessage
+                }
+                });
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
-
-
-
-
+                }
             }
             catch (Exception e)
             {
