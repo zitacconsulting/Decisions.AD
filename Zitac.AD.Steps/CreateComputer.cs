@@ -184,6 +184,14 @@ namespace Zitac.AD.Steps
 
                     childEntry.CommitChanges();
 
+                    if ((bool?)data.Data["Account Disabled"] == true) {
+                        childEntry.InvokeSet("AccountDisabled", true);
+                      }
+                    else {
+                        childEntry.InvokeSet("AccountDisabled", false);
+                    }
+
+
                     string[] ParametersList = this.Attributes;
                     if (ParametersList != null && ParametersList.Length != 0)
                     {
