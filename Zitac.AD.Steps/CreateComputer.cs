@@ -157,8 +157,7 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
-            try
-            {
+
 
                 string baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)OU);
 
@@ -166,6 +165,10 @@ namespace Zitac.AD.Steps
 
                 DirectoryEntry childEntry = ouEntry.Children.Add("CN=" + ComputerName, "computer");
                 childEntry.Properties["sAMAccountName"].Value = (ComputerName + "$");
+                childEntry.CommitChanges();
+            
+
+            try {
                 
                 if (UserAccessControl != 0) { childEntry.Properties["userAccountControl"].Value = UserAccessControl; }
                 if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0 ) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
