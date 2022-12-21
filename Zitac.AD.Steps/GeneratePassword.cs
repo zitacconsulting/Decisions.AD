@@ -25,7 +25,7 @@ namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Generate Password", "Integration", "Active Directory", "Zitac")]
     [Writable]
-    public class GeneratePassword : BaseFlowAwareStep, ISyncStep, IDataProducer //, INotifyPropertyChanged
+    public class GeneratePassword : BaseFlowAwareStep, ISyncStep, IDataProducer//, INotifyPropertyChanged
     {
 
         [WritableValue]
@@ -33,6 +33,9 @@ namespace Zitac.AD.Steps
 
         [WritableValue]
         private bool requireNonLetterOrDigit;
+
+        [WritableValue]
+        private bool onlyOneNonLetterOrDigit;
 
         [WritableValue]
         private bool requireDigit;
@@ -44,7 +47,7 @@ namespace Zitac.AD.Steps
         private bool requireUppercase;
 
 
-        [PropertyClassification(10, "RequiredLength", new string[] { "Options" })]
+        [PropertyClassification(10, "Required Length", new string[] { "Options" })]
         public Int32 RequiredLength
         {
             get { return requiredLength; }
@@ -55,17 +58,32 @@ namespace Zitac.AD.Steps
         }
 
 
-        [PropertyClassification(10, "Require Non Letter Or Digit", new string[] { "Options" })]
+        [PropertyClassification(4, "Require Non Letter Or Digit", new string[] { "Options" })]
         public bool RequireNonLetterOrDigit
         {
             get { return requireNonLetterOrDigit; }
             set
             {
                 requireNonLetterOrDigit = value;
+                this.OnPropertyChanged(nameof(RequireNonLetterOrDigit));
+                this.OnPropertyChanged("OnlyOneNonLetterOrDigit");
+
             }
         }
 
-        [PropertyClassification(10, "Require Digit", new string[] { "Options" })]
+        [BooleanPropertyHidden("RequireNonLetterOrDigit", false)]
+        [PropertyClassification(5, "Only one Non Letter Or Digit", new string[] { "Options" })]
+        public bool OnlyOneNonLetterOrDigit
+        {
+            get { return onlyOneNonLetterOrDigit; }
+            set
+            {
+                onlyOneNonLetterOrDigit = value;
+            }
+        }
+    
+
+        [PropertyClassification(1, "Require Digit", new string[] { "Options" })]
         public bool RequireDigit
         {
             get { return requireDigit; }
@@ -75,7 +93,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-        [PropertyClassification(10, "Require Lowercase", new string[] { "Options" })]
+        [PropertyClassification(2, "Require Lowercase", new string[] { "Options" })]
         public bool RequireLowercase
         {
             get { return requireLowercase; }
@@ -85,7 +103,7 @@ namespace Zitac.AD.Steps
             }
         }
 
-        [PropertyClassification(10, "Require Uppercase", new string[] { "Options" })]
+        [PropertyClassification(3, "Require Uppercase", new string[] { "Options" })]
         public bool RequireUppercase
         {
             get { return requireUppercase; }
@@ -94,8 +112,6 @@ namespace Zitac.AD.Steps
                 requireUppercase = value;
             }
         }
-
-
         public override OutcomeScenarioData[] OutcomeScenarios
         {
             get
@@ -112,31 +128,61 @@ namespace Zitac.AD.Steps
 
             StringBuilder password = new StringBuilder();
             Random random = new Random();
-
-            while (password.Length < RequiredLength)
-            {
-                char c = (char)random.Next(32, 126);
-
-                password.Append(c);
-
-                if (char.IsDigit(c))
-                    RequireDigit = false;
-                else if (char.IsLower(c))
-                    RequireLowercase = false;
-                else if (char.IsUpper(c))
-                    requireUppercase = false;
-                else if (!char.IsLetterOrDigit(c))
-                    RequireNonLetterOrDigit = false;
-            }
+            List<char> RequiredChars = new List<char>();
 
             if (RequireNonLetterOrDigit)
-                password.Append((char)random.Next(33, 48));
+                RequiredChars.Add((char)random.Next(33, 48));
             if (RequireDigit)
-                password.Append((char)random.Next(48, 58));
+                RequiredChars.Add((char)random.Next(48, 58));
             if (RequireLowercase)
-                password.Append((char)random.Next(97, 123));
-            if (requireUppercase)
-                password.Append((char)random.Next(65, 91));
+                RequiredChars.Add((char)random.Next(97, 123));
+            if (RequireUppercase)
+                RequiredChars.Add((char)random.Next(65, 91));
+            
+
+
+            while (password.Length < (RequiredLength))
+            {
+                if ((RequiredLength - password.Length) <= RequiredChars.Count && RequiredChars.Count != 0 ) {
+                    var ToAdd = random.Next(0,(RequiredChars.Count));
+                    password.Append(RequiredChars.ElementAt(ToAdd));
+                    RequiredChars.RemoveAt(ToAdd);
+                }
+                else if ((random.Next(2) == 1) && RequiredChars.Count != 0 ){
+                    var ToAdd = random.Next(0,(RequiredChars.Count));
+                    password.Append(RequiredChars.ElementAt(ToAdd));
+                    RequiredChars.RemoveAt(ToAdd);
+                }
+                else {
+                    int CharRandom;
+                    if (OnlyOneNonLetterOrDigit){
+                        CharRandom = random.Next(0,3);
+                    }
+                    else {
+                        CharRandom = random.Next(0,4);
+                    }
+
+                    switch(CharRandom) {
+                        case 0:
+                            // Digit
+                            password.Append((char)random.Next(48, 58));
+                            break;
+                        case 1:
+                            // Lowercase
+                            password.Append((char)random.Next(97, 123));
+                            break;
+                        case 2:
+                            // Uppercase
+                            password.Append((char)random.Next(65, 91));
+                            break;
+                        case 3:
+                            // NonLetterOrDigit
+                            password.Append((char)random.Next(33, 47));
+                            break;                                                    
+                    }
+                }
+
+            }
 
             return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "Password", (string)password.ToString() } });
         }
