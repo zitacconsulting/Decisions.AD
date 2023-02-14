@@ -133,7 +133,26 @@ namespace Zitac.AD.Steps
                     return new ResultData("No Results");
                 }
 
-                User Results = new User(one, AdditionalAttributes);
+            Int32 MaxPasswordAge = 0;
+            try {
+                MaxPasswordAge = PasswordExpiration.GetADPasswordExpirationPolicy(ADServer, ADCredentials);
+            }
+            catch (Exception e)
+            {
+                string ExceptionMessage = e.ToString();
+                return new ResultData("Error", (IDictionary<string, object>) new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) ExceptionMessage
+                }
+                });
+
+            }
+
+
+
+                User Results = new User(one, AdditionalAttributes, MaxPasswordAge);
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
                 dictionary.Add("Result", (object) Results);

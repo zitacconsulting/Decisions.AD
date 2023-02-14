@@ -313,9 +313,26 @@ namespace Zitac.AD.Steps
                 List<User> Results = new List<User>();
                 if (All != null && All.Count != 0)
                 {
+                    Int32 MaxPasswordAge = 0;
+                    try
+                    {
+                        MaxPasswordAge = PasswordExpiration.GetADPasswordExpirationPolicy(ADServer, ADCredentials);
+                    }
+                    catch (Exception e)
+                    {
+                        string ExceptionMessage = e.ToString();
+                        return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) ExceptionMessage
+                }
+                });
+
+                    }
                     foreach (SearchResult Current in All)
                     {
-                        Results.Add(new User(Current, AdditionalAttributes));
+                        Results.Add(new User(Current, AdditionalAttributes, MaxPasswordAge));
                     }
                 }
                 else if (ShowOutcomeforNoResults)

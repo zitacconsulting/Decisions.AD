@@ -53,6 +53,12 @@ public class User
     public DateTime AccountExpires { get; set; }
 
     [DataMember]
+    public bool PasswordNeverExpires { get; set; }
+
+    [DataMember]
+    public DateTime? PasswordExpiration { get; set; }
+
+    [DataMember]
     public string Street { get; set; }
 
     [DataMember]
@@ -141,7 +147,7 @@ public class User
     public User()
     {
     }
-    public User(SearchResult entry, string[] AdditionalAttributes)
+    public User(SearchResult entry, string[] AdditionalAttributes, Int32 PwdExpDays)
     {
 
         this.LoginNamePreWin2000 = this.GetStringProperty(entry, "sAMAccountName");
@@ -156,6 +162,8 @@ public class User
         this.EmailAddress = this.GetStringProperty(entry, "mail");
         this.WebPage = this.GetStringProperty(entry, "wWWHomePage");
         this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
+        this.PasswordNeverExpires = this.GetNeverExpires(entry);
+        this.PasswordExpiration = this.GetPasswordExpiration(entry, PwdExpDays);
         this.Street = this.GetStringProperty(entry, "streetAddress");
         this.POBox = this.GetStringProperty(entry, "postOfficeBox");
         this.City = this.GetStringProperty(entry, "l");
@@ -319,6 +327,27 @@ public class User
             return !Convert.ToBoolean(flags & 0x0002);
         }
         return new bool();
+    }
+    private bool GetNeverExpires(SearchResult entry)
+    {
+        ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
+        if (property != null && property.Count != 0)
+        {
+            int flags = (int)property[0];
+
+            return Convert.ToBoolean(flags & 0x10000);
+        }
+        return new bool();
+    }
+    private DateTime? GetPasswordExpiration(SearchResult entry, Int32 PwdExpDays)
+    {
+        if(GetNeverExpires(entry)){
+            return null;
+        }
+        else {
+            DateTime ExpirationDate = GetDateTimeProperty(entry, "pwdlastset").AddDays(PwdExpDays);
+            return ExpirationDate;
+        }
     }
 }
 

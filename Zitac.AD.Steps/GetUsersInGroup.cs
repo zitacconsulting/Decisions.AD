@@ -168,16 +168,35 @@ namespace Zitac.AD.Steps
                 {
                     directorySearcher.Filter = "(&(objectCategory=person)(objectClass=user)(|(memberOf=" + one.Properties["distinguishedname"][0].ToString() + ")(primaryGroupId=" + RID + ")))";
                 }
-                directorySearcher.PageSize = int.MaxValue; 
+                directorySearcher.PageSize = int.MaxValue;
 
                 SearchResultCollection UserGroupMembers = directorySearcher.FindAll();
 
                 if (UserGroupMembers != null && UserGroupMembers.Count != 0)
                 {
+                    Int32 MaxPasswordAge = 0;
+                    try
+                    {
+                        MaxPasswordAge = PasswordExpiration.GetADPasswordExpirationPolicy(ADServer, ADCredentials);
+                    }
+                    catch (Exception e)
+                    {
+                        string ExceptionMessage = e.ToString();
+                        return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
+                {
+                {
+                    "Error Message",
+                    (object) ExceptionMessage
+                }
+                });
+
+                    }
+
+
                     foreach (SearchResult Current in UserGroupMembers)
                     {
 
-                        UserList.Add(new User(Current, AdditionalAttributes));
+                        UserList.Add(new User(Current, AdditionalAttributes, MaxPasswordAge));
                     }
                 }
 
