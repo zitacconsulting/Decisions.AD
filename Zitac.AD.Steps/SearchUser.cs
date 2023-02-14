@@ -38,6 +38,11 @@ namespace Zitac.AD.Steps
         private bool showOutcomeforNoResults;
 
         [WritableValue]
+        private bool? passwordNeverExpires;
+
+        
+
+        [WritableValue]
         private SearchParameters[] qParams;
 
         [PropertyClassification(8, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
@@ -90,7 +95,13 @@ namespace Zitac.AD.Steps
             }
         }
 
+        [PropertyClassification(11, "Password Never Expires", new string[] { "Search Definition" })]
+        public bool? PasswordNeverExpires
+        {
+            get { return passwordNeverExpires; }
+            set { passwordNeverExpires = value; }
 
+        }
         public IInputMapping[] DefaultInputs
         {
             get
@@ -268,6 +279,8 @@ namespace Zitac.AD.Steps
                     }
 
                 }
+                if(PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
+                if(PasswordNeverExpires == false) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))"; }
                 Filter += ")";
             }
 
