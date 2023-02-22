@@ -40,6 +40,9 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool? passwordNeverExpires;
 
+        [WritableValue]
+        private bool? accountEnabled;
+
         
 
         [WritableValue]
@@ -100,6 +103,14 @@ namespace Zitac.AD.Steps
         {
             get { return passwordNeverExpires; }
             set { passwordNeverExpires = value; }
+
+        }
+
+        [PropertyClassification(11, "Account Enabled", new string[] { "Search Definition" })]
+        public bool? AccountEnabled
+        {
+            get { return accountEnabled; }
+            set { accountEnabled = value; }
 
         }
         public IInputMapping[] DefaultInputs
@@ -279,9 +290,15 @@ namespace Zitac.AD.Steps
                     }
 
                 }
-                if(PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
-                if(PasswordNeverExpires == false) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))"; }
                 Filter += ")";
+                if(PasswordNeverExpires != null || AccountEnabled != null) {
+                    Filter = "(&" + Filter;
+                        if(PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
+                        if(PasswordNeverExpires == false) { Filter += "(!userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
+                        if(AccountEnabled == true) { Filter += "(!userAccountControl:1.2.840.113556.1.4.803:=2)"; }
+                        if(AccountEnabled == false) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=2)"; }
+                    Filter += ")";
+                }
             }
 
             Credentials ADCredentials = new Credentials();
