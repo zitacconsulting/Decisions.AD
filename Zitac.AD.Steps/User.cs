@@ -124,7 +124,7 @@ public class User
     public string ObjectSID { get; set; }
 
     [DataMember]
-    public DateTime PasswordLastSet { get; set; }
+    public DateTime PwdLastSet { get; set; }
 
     [DataMember]
     public DateTime WhenChanged { get; set; }
@@ -186,7 +186,7 @@ public class User
         this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
         this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
         this.ObjectSID = this.GetStringProperty(entry, "objectSid");
-        this.PasswordLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
+        this.PwdLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
         this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
         this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
         this.LogonCount = this.GetIntProperty(entry, "logonCount");
