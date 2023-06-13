@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -11,17 +11,15 @@
     <BuildDest>$(RootPath)obj</BuildDest>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ActiveDirectory" Version="2.0.0"/>
-    <PackageReference Include="DecisionsSDK" Version="7.10.1"/>
-    <PackageReference Include="System.DirectoryServices" Version="6.0.0"/>
+    <PackageReference Include="ActiveDirectory" Version="2.0.0" />
+    <PackageReference Include="DecisionsSDK" Version="8.9.2" />
+    <PackageReference Include="System.DirectoryServices" Version="6.0.0" />
+    <PackageReference Include="System.DirectoryServices.Protocols" Version="7.0.0" />
   </ItemGroup>
-    <Target Name="CopyDLLs" AfterTargets="Build">
+    <!-- <Target Name="CopyDLLs" AfterTargets="Build">
     <Message Text="Executing CopyDLLs task" Importance="High" />
 
-    <Copy
-      SourceFiles="$(TargetDir)\Zitac.AD.dll"
-      DestinationFolder="C:\Program Files\Decisions\Decisions Server\modules\Decisions.Local\CoreServicesDlls" />
-
+    <Copy SourceFiles="$(TargetDir)\Zitac.AD.dll" DestinationFolder="C:\Program Files\Decisions\Decisions Server\modules\Decisions.Local\CoreServicesDlls" />
     <Message Text="Copied build files" Importance="High" />
-  </Target>
+  </Target> -->
 </Project>

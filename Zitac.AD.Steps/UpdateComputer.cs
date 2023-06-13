@@ -1,26 +1,15 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.Design.Flow.Mapping.InputImpl;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
-using System.Text;
+
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Update Computer", "Integration", "Active Directory", "Zitac", "Computer")]
@@ -32,9 +21,15 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
+        private bool useSSL = true;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [WritableValue]
         private string[] attributes;
 
-        [PropertyClassification(2, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -46,6 +41,30 @@ namespace Zitac.AD.Steps
                 //If any of the inputs you want to update are in InputData (not a property),
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
+            }
+        }
+
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
             }
         }
 
@@ -68,11 +87,12 @@ namespace Zitac.AD.Steps
         {
             get
             {
-                IInputMapping[] inputMappingArray = new IInputMapping[4];
+                IInputMapping[] inputMappingArray = new IInputMapping[5];
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Account Disabled" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Description" };
                 inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Location" };
                 inputMappingArray[3] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Managed By (DN)" };
+                inputMappingArray[4] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
 
 
 
@@ -92,6 +112,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Computer Name Or DN"));
 
                 // User Data
@@ -135,6 +156,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
+            int? Port = (int?)data.Data["Port"];
             string ComputerName = data.Data["Computer Name Or DN"] as string;
 
             Credentials ADCredentials = new Credentials();
@@ -151,64 +173,86 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
+            var Filter = "(&(objectClass=computer)(|(name=" + ComputerName + ")(distinguishedName=" + ComputerName + ")))";
             try
             {
 
-                string baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=computer)(|(name=" + ComputerName + ")(distinguishedName=" + ComputerName + ")))";
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                List<SearchResultEntry> UserResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, new List<string> { "distinguishedname", "userAccountControl" }).ToList();
+                string FoundComputerDN = String.Empty;
+                Int64 UserAccountControl = 0;
 
-                SearchResult one = directorySearcher.FindOne();
-
-                if (searchRoot != null)
+                if (UserResults != null && UserResults.Count != 0)
                 {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
+                    FoundComputerDN = Converters.GetStringProperty(UserResults[0], "distinguishedname");
+                    UserAccountControl = Converters.GetIntProperty(UserResults[0], "userAccountControl");
                 }
-                directorySearcher.Dispose();
-
-                if (one == null)
+                else
                 {
-                    throw new Exception(string.Format("Unable to find computer with name: '{0}' in the AD", (object)ComputerName));
+                    throw new Exception(string.Format("Unable to find computer with name or DN: '{0}' in the AD", ComputerName));
                 }
-                DirectoryEntry childEntry = one.GetDirectoryEntry();
 
+                ModifyRequest modifyRequest = new ModifyRequest(FoundComputerDN);
 
-
-                if (data.Data["Description"] != null && (data.Data["Description"]).ToString().Length != 0 ) { childEntry.Properties["description"].Value = (string)data.Data["Description"]; }
-                if (data.Data.ContainsKey("Description") && (data.Data["Description"]) == null) {childEntry.Properties["description"].Clear();}
-
-                if (data.Data["Location"] != null && (data.Data["Location"]).ToString().Length != 0 ) { childEntry.Properties["location"].Value = (string)data.Data["Location"]; }
-                if (data.Data.ContainsKey("Location") && (data.Data["Location"]) == null) {childEntry.Properties["location"].Clear();}
-
-                if (data.Data["Managed By (DN)"] != null && (data.Data["Managed By (DN)"]).ToString().Length != 0 ) { childEntry.Properties["managedBy"].Value = (string)data.Data["Managed By (DN)"]; }
-                if (data.Data.ContainsKey("Managed By (DN)") && (data.Data["Managed By (DN)"]) == null) {childEntry.Properties["managedBy"].Clear();}
-
-                if ((bool?)data.Data["Account Disabled"] == true) {
-                        childEntry.InvokeSet("AccountDisabled", true);
-                      }
-                    else {
-                        childEntry.InvokeSet("AccountDisabled", false);
-                    }
-
-                childEntry.CommitChanges();
+                List<AttributeValues> AttributesToAdd = new List<AttributeValues> {
+                    new AttributeValues("Description", "description"),
+                    new AttributeValues("Location", "location"),
+                    new AttributeValues("Managed By (DN)", "managedBy"),
+                    new AttributeValues("Account Expires", "accountExpires"),
+                    new AttributeValues("Street", "streetAddress"),
+                    new AttributeValues("PO Box", "postOfficeBox"),
+                    new AttributeValues("City", "l"),
+                    new AttributeValues("State/Province", "st"),
+                    new AttributeValues("Zip/Postal Code", "postalCode"),
+                    new AttributeValues("Country/Region", "c"),
+                    new AttributeValues("Home Folder", "homeDirectory"),
+                    new AttributeValues("Home Folder Drive Letter", "homeDrive"),
+                    new AttributeValues("Home Phone", "homePhone"),
+                    new AttributeValues("Mobile Phone", "mobile"),
+                    new AttributeValues("Department", "department"),
+                    new AttributeValues("Job title", "title"),
+                    new AttributeValues("Company", "company"),
+                    new AttributeValues("Manager (DN)", "manager"),
+                    new AttributeValues("Employee ID", "employeeID"),
+                    new AttributeValues("Employee Number", "employeeNumber"),
+                    new AttributeValues("Employee Type", "employeeType")
+                };
 
                 string[] ParametersList = this.Attributes;
                 if (ParametersList != null && ParametersList.Length != 0)
                 {
                     foreach (string CurrParameter in ParametersList)
                     {
-                        if (data.Data[CurrParameter] != null && (data.Data[CurrParameter]).ToString().Length != 0 ) { childEntry.Properties[CurrParameter].Value = (string)data.Data[CurrParameter]; }
-                        if (data.Data.ContainsKey(CurrParameter) && (data.Data[CurrParameter]) == null) {childEntry.Properties[CurrParameter].Clear();}
+                        AttributesToAdd.Add(new AttributeValues(CurrParameter,CurrParameter));
                     }
-                    childEntry.CommitChanges();
                 }
 
-                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)childEntry.Properties["distinguishedName"].Value } });
+                foreach (AttributeValues Attribute in AttributesToAdd)
+                {
+                    DirectoryAttributeModification ToAddAttribute = LDAPHelper.CreateAttributeModification(data, Attribute);
+                    if (ToAddAttribute != null) { modifyRequest.Modifications.Add(ToAddAttribute); }
+                }
 
+                Int64 UserAccessControl = UserAccountControl;
+                if ((bool?)data.Data["Account Disabled"] == true) { UserAccessControl = UserAccessControl | 0x2; }
+                if ((bool?)data.Data["Account Disabled"] == false) { UserAccessControl = UserAccessControl & ~0x2; }
+                if (UserAccessControl != UserAccountControl)
+                {
+                    DirectoryAttributeModification AttributeModification = new DirectoryAttributeModification { Operation = DirectoryAttributeOperation.Replace, Name = "userAccountControl" };
+                    AttributeModification.Add(UserAccessControl.ToString());
+                    modifyRequest.Modifications.Add(AttributeModification);
+                }
 
+                ModifyResponse response = (ModifyResponse)connection.SendRequest((DirectoryRequest)modifyRequest);
 
+                if (response.ResultCode != ResultCode.Success)
+                {
+                    throw new Exception("Failed to change computer attributes. Result code: " + response.ResultCode + ". Error: " + response.ErrorMessage);
+                }
+
+                return new ResultData("Done", (IDictionary<string, object>)new Dictionary<string, object>() { { "DN", (object)FoundComputerDN } });
 
             }
             catch (Exception e)

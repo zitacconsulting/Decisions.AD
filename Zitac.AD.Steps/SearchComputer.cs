@@ -1,23 +1,12 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.Design.Flow.Mapping.InputImpl;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
 
@@ -32,6 +21,12 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
+        private bool useSSL;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [WritableValue]
         private bool combineFiltersUsingAnd;
 
         [WritableValue]
@@ -40,7 +35,7 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private SearchParameters[] qParams;
 
-        [PropertyClassification(8, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -52,6 +47,30 @@ namespace Zitac.AD.Steps
                 //If any of the inputs you want to update are in InputData (not a property),
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
+            }
+        }
+
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
             }
         }
 
@@ -95,9 +114,11 @@ namespace Zitac.AD.Steps
         {
             get
             {
-                IInputMapping[] inputMappingArray = new IInputMapping[2];
+                IInputMapping[] inputMappingArray = new IInputMapping[4];
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Search Base (DN)" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
+                inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() {InputDataName = "Scope", Value = SearchScope.Subtree};
                 return inputMappingArray;
             }
         }
@@ -127,7 +148,9 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Search Base (DN)"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(SearchScope)), "Scope", false, true, true));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
 
                 SearchParameters[] ParametersList = this.GetSearchParameters();
@@ -176,7 +199,9 @@ namespace Zitac.AD.Steps
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
             string BaseSearch = data.Data["Search Base (DN)"] as string;
-            string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
+            SearchScope Scope = (SearchScope)data.Data["Scope"];
+            List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
+            int? Port = (int?)data.Data["Port"];
 
             string Filter = string.Empty;
 
@@ -281,47 +306,54 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
+            List<string> BaseAttributeList = Computer.ComputerAttributes;
+
+            if (AdditionalAttributes != null)
+            {
+                BaseAttributeList.AddRange(AdditionalAttributes);
+            }
+            else
+            {
+                AdditionalAttributes = new List<string>();
+            }
+
+            Filter = "(&(objectClass=computer)" + Filter + ")";
+            Console.WriteLine(Filter);
+
             try
             {
-                string baseLdapPath = string.Empty;
-                string str = string.Empty;
-                if ((BaseSearch == null) || (BaseSearch == string.Empty))
-                {
-                    baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
-                }
-                else
-                {
-                    baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)BaseSearch);
-                }
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=computer)" + Filter + ")";
 
-                SearchResultCollection All = directorySearcher.FindAll();
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
-                if (searchRoot != null)
-                {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
+
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = string.Empty;
+                if(String.IsNullOrEmpty(BaseSearch)) {
+                    BaseDN = LDAPHelper.GetBaseDN(connection);
                 }
-                directorySearcher.Dispose();
+                else {
+                    BaseDN = BaseSearch;
+                }
+                List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, Scope, Filter, BaseAttributeList).ToList();
 
-                List<Computer> Results = new List<Computer>();
-                if (All != null && All.Count != 0)
+                List<Computer> Computers = new List<Computer>();
+
+                if (Results != null && Results.Count != 0)
                 {
-                    foreach (SearchResult Current in All)
+                    foreach (SearchResultEntry Computer in Results)
                     {
-                        Results.Add(new Computer(Current, AdditionalAttributes));
+
+                        Computers.Add(new(Computer, AdditionalAttributes));
                     }
+
                 }
                 else if (ShowOutcomeforNoResults)
                 {
                     return new ResultData("No Results");
                 }
 
-
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("FoundComputers", (object)Results.ToArray());
+                dictionary.Add("FoundComputers", (object)Computers.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>)dictionary);
 
 

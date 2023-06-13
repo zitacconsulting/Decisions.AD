@@ -133,7 +133,7 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchResult Current in All)
                     {
-                        Results.Add(new DomainController(Current));
+                        //Results.Add(new DomainController(Current));
                     }
                 }
                 else if (ShowOutcomeforNoResults)

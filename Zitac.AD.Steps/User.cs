@@ -1,11 +1,8 @@
-using ActiveDirectory;
-using System.DirectoryServices;
+
 using System.Runtime.Serialization;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System.Collections.Generic;
-using System.Collections;
 using System;
-using System.Runtime;
+using System.DirectoryServices.Protocols;
 
 namespace Zitac.AD.Steps;
 
@@ -36,9 +33,6 @@ public class User
 
     [DataMember]
     public string TelephoneNumber { get; set; }
-
-    [DataMember]
-    public string Password { get; set; }
 
     [DataMember]
     public string Description { get; set; }
@@ -144,53 +138,96 @@ public class User
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
+    public static readonly List<string> UserAttributes = new List<String> {
+    "sAMAccountName",
+    "userPrincipalName",
+    "givenName",
+    "sn",
+    "initials",
+    "displayName",
+    "physicalDeliveryOfficeName",
+    "telephoneNumber",
+    "description",
+    "mail",
+    "wWWHomePage",
+    "accountexpires",
+    "streetAddress",
+    "postOfficeBox",
+    "l",
+    "st",
+    "postalCode",
+    "c",
+    "homeDirectory",
+    "homeDrive",
+    "homePhone",
+    "mobile",
+    "department",
+    "title",
+    "company",
+    "manager",
+    "employeeID",
+    "employeeNumber",
+    "employeeType",
+    "cn",
+    "distinguishedname",
+    "lastLogon",
+    "objectguid",
+    "objectSid",
+    "pwdlastset",
+    "whenchanged",
+    "whencreated",
+    "logonCount",
+    "uSNChanged",
+    "userAccountControl"
+};
+
     public User()
     {
     }
-    public User(SearchResult entry, string[] AdditionalAttributes, Int32 PwdExpDays)
+    public User(SearchResultEntry entry, List<String> AdditionalAttributes, Int32 PwdExpDays)
     {
 
-        this.LoginNamePreWin2000 = this.GetStringProperty(entry, "sAMAccountName");
-        this.LoginNameUPN = this.GetStringProperty(entry, "userPrincipalName");
-        this.FirstName = this.GetStringProperty(entry, "givenName");
-        this.LastName = this.GetStringProperty(entry, "sn");
-        this.Initials = this.GetStringProperty(entry, "initials");
-        this.DisplayName = this.GetStringProperty(entry, "displayName");
-        this.Office = this.GetStringProperty(entry, "physicalDeliveryOfficeName");
-        this.TelephoneNumber = this.GetStringProperty(entry, "telephoneNumber");
-        this.Description = this.GetStringProperty(entry, "description");
-        this.EmailAddress = this.GetStringProperty(entry, "mail");
-        this.WebPage = this.GetStringProperty(entry, "wWWHomePage");
-        this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
+        this.LoginNamePreWin2000 = Converters.GetStringProperty(entry, "sAMAccountName");
+        this.LoginNameUPN = Converters.GetStringProperty(entry, "userPrincipalName");
+        this.FirstName = Converters.GetStringProperty(entry, "givenName");
+        this.LastName = Converters.GetStringProperty(entry, "sn");
+        this.Initials = Converters.GetStringProperty(entry, "initials");
+        this.DisplayName = Converters.GetStringProperty(entry, "displayName");
+        this.Office = Converters.GetStringProperty(entry, "physicalDeliveryOfficeName");
+        this.TelephoneNumber = Converters.GetStringProperty(entry, "telephoneNumber");
+        this.Description = Converters.GetStringProperty(entry, "description");
+        this.EmailAddress = Converters.GetStringProperty(entry, "mail");
+        this.WebPage = Converters.GetStringProperty(entry, "wWWHomePage");
+        this.AccountExpires = Converters.GetDateTimeProperty(entry, "accountexpires");
         this.PasswordNeverExpires = this.GetNeverExpires(entry);
         this.PasswordExpiration = this.GetPasswordExpiration(entry, PwdExpDays);
-        this.Street = this.GetStringProperty(entry, "streetAddress");
-        this.POBox = this.GetStringProperty(entry, "postOfficeBox");
-        this.City = this.GetStringProperty(entry, "l");
-        this.StateProvince = this.GetStringProperty(entry, "st");
-        this.ZipPostalCode = this.GetStringProperty(entry, "postalCode");
-        this.CountryRegion = this.GetStringProperty(entry, "c");
-        this.HomeFolder = this.GetStringProperty(entry, "homeDirectory");
-        this.HomeFolderDriveLetter = this.GetStringProperty(entry, "homeDrive");
-        this.HomePhone = this.GetStringProperty(entry, "homePhone");
-        this.MobilePhone = this.GetStringProperty(entry, "mobile");
-        this.Department = this.GetStringProperty(entry, "department");
-        this.JobTitle = this.GetStringProperty(entry, "title");
-        this.Company = this.GetStringProperty(entry, "company");
-        this.ManagerDN = this.GetStringProperty(entry, "manager");
-        this.EmployeeID = this.GetStringProperty(entry, "employeeID");
-        this.EmployeeNumber = this.GetStringProperty(entry, "employeeNumber");
-        this.EmployeeType = this.GetStringProperty(entry, "employeeType");
-        this.CN = this.GetStringProperty(entry, "cn");
-        this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
-        this.LastLogonDate = this.GetDateTimeProperty(entry, "lastLogon");
-        this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
-        this.ObjectSID = this.GetStringProperty(entry, "objectSid");
-        this.PwdLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
-        this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
-        this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
-        this.LogonCount = this.GetIntProperty(entry, "logonCount");
-        this.uSNChanged = this.GetIntProperty(entry, "uSNChanged");
+        this.Street = Converters.GetStringProperty(entry, "streetAddress");
+        this.POBox = Converters.GetStringProperty(entry, "postOfficeBox");
+        this.City = Converters.GetStringProperty(entry, "l");
+        this.StateProvince = Converters.GetStringProperty(entry, "st");
+        this.ZipPostalCode = Converters.GetStringProperty(entry, "postalCode");
+        this.CountryRegion = Converters.GetStringProperty(entry, "c");
+        this.HomeFolder = Converters.GetStringProperty(entry, "homeDirectory");
+        this.HomeFolderDriveLetter = Converters.GetStringProperty(entry, "homeDrive");
+        this.HomePhone = Converters.GetStringProperty(entry, "homePhone");
+        this.MobilePhone = Converters.GetStringProperty(entry, "mobile");
+        this.Department = Converters.GetStringProperty(entry, "department");
+        this.JobTitle = Converters.GetStringProperty(entry, "title");
+        this.Company = Converters.GetStringProperty(entry, "company");
+        this.ManagerDN = Converters.GetStringProperty(entry, "manager");
+        this.EmployeeID = Converters.GetStringProperty(entry, "employeeID");
+        this.EmployeeNumber = Converters.GetStringProperty(entry, "employeeNumber");
+        this.EmployeeType = Converters.GetStringProperty(entry, "employeeType");
+        this.CN = Converters.GetStringProperty(entry, "cn");
+        this.DistinguishedName = Converters.GetStringProperty(entry, "distinguishedname");
+        this.LastLogonDate = Converters.GetDateTimeProperty(entry, "lastLogon");
+        this.ObjectGUID = new Guid((System.Byte[])Converters.GetBinaryProperty(entry, "objectguid")).ToString();
+        this.ObjectSID = Converters.GetSIDProperty(entry, "objectSid");
+        this.PwdLastSet = Converters.GetDateTimeProperty(entry, "pwdlastset");
+        this.WhenChanged = Converters.GetDateTimeProperty(entry, "whenchanged");
+        this.WhenCreated = Converters.GetDateTimeProperty(entry, "whencreated");
+        this.LogonCount = Converters.GetIntProperty(entry, "logonCount");
+        this.uSNChanged = Converters.GetIntProperty(entry, "uSNChanged");
         this.AccountEnabled = this.IsEnabled(entry);
 
         if (AdditionalAttributes != null)
@@ -200,154 +237,50 @@ public class User
             {
                 ExtendedAttributes ToAdd = new ExtendedAttributes();
                 ToAdd.Attribute = Attribute;
-                ToAdd.StringValue = this.GetStringProperty(entry, Attribute);
-                ToAdd.DateValue = this.GetDateTimeProperty(entry, Attribute);
-                ToAdd.IntegerValue = this.GetIntProperty(entry, Attribute);
-                ToAdd.BinaryValue = this.GetBinaryProperty(entry, Attribute);
+                ToAdd.StringValue = Converters.GetStringProperty(entry, Attribute);
+                ToAdd.DateValue = Converters.GetDateTimeProperty(entry, Attribute);
+                ToAdd.IntegerValue = Converters.GetIntProperty(entry, Attribute);
+                ToAdd.BinaryValue = Converters.GetBinaryProperty(entry, Attribute);
                 AttributeResults.Add(ToAdd);
             }
             this.AdditionalAttributesResult = AttributeResults.ToArray();
         }
 
     }
-    private Object DynamicallyChoosePropertyGetter(SearchResult entry, string propertyName)
+
+private bool IsEnabled(SearchResultEntry entry)
+{
+    var property = entry.Attributes["userAccountControl"];
+    if (property != null && property.Count != 0)
     {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                string Type = property[0].GetType().ToString();
-                if (Type == "System.Int64" || Type == "System.DateTime")
-                {
-                    return GetDateTimeProperty(entry, propertyName);
-                }
-                else if (Type == "System.Int32")
-                {
-                    return GetIntProperty(entry, propertyName);
-                }
-                else if (Type == "System.Byte[]")
-                {
-                    return GetBinaryProperty(entry, propertyName);
-                }
-                else
-                {
-                    return GetStringProperty(entry, propertyName);
-                }
-            }
-        }
+        int flags = Int32.Parse((string)property[0]);
+
+        return !Convert.ToBoolean(flags & 0x0002);
+    }
+    return new bool();
+}
+private bool GetNeverExpires(SearchResultEntry entry)
+{
+    var property = entry.Attributes["userAccountControl"];
+    if (property != null && property.Count != 0)
+    {
+        string hej = (string)property[0];
+        int flags = Int32.Parse((string)property[0]);
+
+        return Convert.ToBoolean(flags & 0x10000);
+    }
+    return new bool();
+}
+private DateTime? GetPasswordExpiration(SearchResultEntry entry, Int32 PwdExpDays)
+{
+    if (GetNeverExpires(entry))
+    {
         return null;
     }
-    private string GetStringProperty(SearchResult entry, string propertyName)
+    else
     {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                return property[0].ToString();
-            }
-            return (string)null;
-        }
-        return (string)null;
-    }
-    private DateTime GetDateTimeProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Int64")
-                {
-                    if (property[0].ToString() == "9223372036854775807")
-                    {
-                        return new DateTime();
-                    }
-                    long date = Convert.ToInt64(property[0]);
-                    System.DateTime FormattedDate = System.DateTime.FromFileTime(date);
-                    return FormattedDate;
-                }
-                if (property[0].GetType().ToString() == "System.DateTime")
-                {
-                    return (DateTime)property[0];
-                }
-                return new DateTime();
-            }
-            return new DateTime();
-        }
-        return new DateTime();
-    }
-    private Int64 GetIntProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Int64")
-                {
-                    return (Int64)property[0];
-                }
-                if (property[0].GetType().ToString() == "System.Int32")
-                {
-                    return (Int64)Convert.ToInt64(property[0]);
-                }
-                return new Int64();
-            }
-            return new Int64();
-        }
-        return new Int64();
-    }
-    private System.Byte[] GetBinaryProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Byte[]")
-                {
-                    return (System.Byte[])property[0];
-                }
-                return (System.Byte[])null;
-            }
-            return (System.Byte[])null;
-        }
-        return (System.Byte[])null;
-    }
-
-    private bool IsEnabled(SearchResult entry)
-    {
-        ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
-        if (property != null && property.Count != 0)
-        {
-            int flags = (int)property[0];
-
-            return !Convert.ToBoolean(flags & 0x0002);
-        }
-        return new bool();
-    }
-    private bool GetNeverExpires(SearchResult entry)
-    {
-        ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
-        if (property != null && property.Count != 0)
-        {
-            int flags = (int)property[0];
-
-            return Convert.ToBoolean(flags & 0x10000);
-        }
-        return new bool();
-    }
-    private DateTime? GetPasswordExpiration(SearchResult entry, Int32 PwdExpDays)
-    {
-        if(GetNeverExpires(entry)){
-            return null;
-        }
-        else {
-            DateTime ExpirationDate = GetDateTimeProperty(entry, "pwdlastset").AddDays(PwdExpDays);
-            return ExpirationDate;
-        }
+        DateTime ExpirationDate = Converters.GetDateTimeProperty(entry, "pwdlastset").AddDays(PwdExpDays);
+        return ExpirationDate;
     }
 }
-
+}

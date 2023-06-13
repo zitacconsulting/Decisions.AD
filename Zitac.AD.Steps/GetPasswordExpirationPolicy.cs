@@ -1,39 +1,33 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
-using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
-using System.ComponentModel;
+using System.DirectoryServices.Protocols;
 
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Get Password Expiration Policy", "Integration", "Active Directory", "Zitac")]
     [Writable]
-    public class GetPasswordExpirationPolicy : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class GetPasswordExpirationPolicy : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
 
         [WritableValue]
         private bool integratedAuthentication;
 
         [WritableValue]
+        private bool useSSL;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [WritableValue]
         private bool showOutcomeforNoResults;
 
-        [PropertyClassification(new string[] { "Integrated Authentication" })]
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -45,6 +39,30 @@ namespace Zitac.AD.Steps
                 //If any of the inputs you want to update are in InputData (not a property),
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
+            }
+        }
+
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
             }
         }
 
@@ -60,6 +78,16 @@ namespace Zitac.AD.Steps
 
         }
 
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[1];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                return inputMappingArray;
+            }
+        }
+
         public DataDescription[] InputData
         {
             get
@@ -72,6 +100,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
                 return dataDescriptionList.ToArray();
             }
         }
@@ -96,6 +125,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
+            int? Port = (int?)data.Data["Port"];
 
             Credentials ADCredentials = new Credentials();
 
@@ -113,7 +143,10 @@ namespace Zitac.AD.Steps
 
             Int32 MaxPasswordAge = 0;
             try {
-                MaxPasswordAge = PasswordExpiration.GetADPasswordExpirationPolicy(ADServer, ADCredentials);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                MaxPasswordAge = LDAPHelper.GetADPasswordExpirationPolicy(connection, "");
             }
             catch (Exception e)
             {

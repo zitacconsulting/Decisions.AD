@@ -1,25 +1,14 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.Design.Flow.Mapping.InputImpl;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
+using System.DirectoryServices.Protocols;
 
 namespace Zitac.AD.Steps
 {
@@ -32,6 +21,12 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
+        private bool useSSL = true;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+ 
+        [WritableValue]
         private bool combineFiltersUsingAnd;
 
         [WritableValue]
@@ -43,12 +38,12 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool? accountEnabled;
 
-        
+
 
         [WritableValue]
         private SearchParameters[] qParams;
 
-        [PropertyClassification(8, "Use Integrated Authentication", new string[] { "Integrated Authentication" })]
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -62,6 +57,31 @@ namespace Zitac.AD.Steps
                 this.OnPropertyChanged("InputData");
             }
         }
+
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
+            }
+        }
+
 
         [PropertyClassification(9, "Combine Filters Using And", new string[] { "Search Definition" })]
         public bool CombineFiltersUsingAnd
@@ -117,9 +137,11 @@ namespace Zitac.AD.Steps
         {
             get
             {
-                IInputMapping[] inputMappingArray = new IInputMapping[2];
+                IInputMapping[] inputMappingArray = new IInputMapping[4];
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Search Base (DN)" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
+                inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() {InputDataName = "Scope", Value = SearchScope.Subtree};
                 return inputMappingArray;
             }
         }
@@ -149,6 +171,8 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(SearchScope)), "Scope", false, true, true));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Search Base (DN)"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
 
@@ -201,18 +225,22 @@ namespace Zitac.AD.Steps
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
             string BaseSearch = data.Data["Search Base (DN)"] as string;
+            int? Port = (int?)data.Data["Port"];
+            SearchScope Scope = (SearchScope)data.Data["Scope"];
             string UserName = data.Data["User Name"] as string;
-            string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
+            List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
 
             string Filter = string.Empty;
 
             SearchParameters[] ParametersList = this.GetSearchParameters();
             if (ParametersList != null && ParametersList.Length != 0)
             {
-                if (CombineFiltersUsingAnd)
+                if (CombineFiltersUsingAnd) {
                     Filter = "(&";
-                else
+                }
+                else {
                     Filter = "(|";
+                }
                 foreach (SearchParameters CurrParameter in ParametersList)
                 {
                     object ParameterValue = data.Data[CurrParameter.Alias] as object;
@@ -291,15 +319,16 @@ namespace Zitac.AD.Steps
 
                 }
                 Filter += ")";
-                if(PasswordNeverExpires != null || AccountEnabled != null) {
+            }
+                if (PasswordNeverExpires != null || AccountEnabled != null)
+                {
                     Filter = "(&" + Filter;
-                        if(PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
-                        if(PasswordNeverExpires == false) { Filter += "(!userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
-                        if(AccountEnabled == true) { Filter += "(!userAccountControl:1.2.840.113556.1.4.803:=2)"; }
-                        if(AccountEnabled == false) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=2)"; }
+                    if (PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
+                    if (PasswordNeverExpires == false) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))"; }
+                    if (AccountEnabled == true) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=2))"; }
+                    if (AccountEnabled == false) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=2)"; }
                     Filter += ")";
                 }
-            }
 
             Credentials ADCredentials = new Credentials();
 
@@ -315,55 +344,47 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
+            List<string> BaseAttributeList = User.UserAttributes;
+
+            if (AdditionalAttributes != null)
+            {
+                BaseAttributeList.AddRange(AdditionalAttributes);
+            }
+            else
+            {
+                AdditionalAttributes = new List<string>();
+            }
+
+            Filter = "(&(objectClass=user)(objectCategory=person)" + Filter + ")";
+            Console.WriteLine(Filter);
+
             try
             {
-                string baseLdapPath = string.Empty;
-                string str = string.Empty;
-                if ((BaseSearch == null) || (BaseSearch == string.Empty))
-                {
-                    baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
-                }
-                else
-                {
-                    baseLdapPath = string.Format("LDAP://{0}/{1}", (object)ADServer, (object)BaseSearch);
-                }
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=user)(objectCategory=person)" + Filter + ")";
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
-                SearchResultCollection All = directorySearcher.FindAll();
 
-                if (searchRoot != null)
-                {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = string.Empty;
+                if(String.IsNullOrEmpty(BaseSearch)) {
+                    BaseDN = LDAPHelper.GetBaseDN(connection);
                 }
-                directorySearcher.Dispose();
+                else {
+                    BaseDN = BaseSearch;
+                }
+                List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, Scope, Filter, BaseAttributeList).ToList();
 
-                List<User> Results = new List<User>();
-                if (All != null && All.Count != 0)
+                List<User> Users = new List<User>();
+
+                if (Results != null && Results.Count != 0)
                 {
-                    Int32 MaxPasswordAge = 0;
-                    try
+
+                    int MaxPasswordAge = LDAPHelper.GetADPasswordExpirationPolicy(connection, null);
+                    foreach (SearchResultEntry User in Results)
                     {
-                        MaxPasswordAge = PasswordExpiration.GetADPasswordExpirationPolicy(ADServer, ADCredentials);
-                    }
-                    catch (Exception e)
-                    {
-                        string ExceptionMessage = e.ToString();
-                        return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
-                {
-                {
-                    "Error Message",
-                    (object) ExceptionMessage
-                }
-                });
 
+                        Users.Add(new(User, AdditionalAttributes, MaxPasswordAge));
                     }
-                    foreach (SearchResult Current in All)
-                    {
-                        Results.Add(new User(Current, AdditionalAttributes, MaxPasswordAge));
-                    }
+
                 }
                 else if (ShowOutcomeforNoResults)
                 {
@@ -372,10 +393,8 @@ namespace Zitac.AD.Steps
 
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("FoundUsers", (object)Results.ToArray());
+                dictionary.Add("FoundUsers", (object)Users.ToArray());
                 return new ResultData("Done", (IDictionary<string, object>)dictionary);
-
-
 
             }
             catch (Exception e)

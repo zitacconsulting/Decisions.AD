@@ -1,39 +1,35 @@
 using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
-using System.ComponentModel;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Get Computer Info", "Integration", "Active Directory", "Zitac", "Computer")]
     [Writable]
-    public class GetComputerInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class GetComputerInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
      
         [WritableValue]
         private bool integratedAuthentication;
 
         [WritableValue]
+        private bool useSSL;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [WritableValue]
         private bool showOutcomeforNoResults;
 
-        [PropertyClassification(new string[]{"Integrated Authentication"})]
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -45,6 +41,30 @@ namespace Zitac.AD.Steps
                 //If any of the inputs you want to update are in InputData (not a property),
                 //you need to update InputData and shown below.
                 this.OnPropertyChanged("InputData");
+            }
+        }
+
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
             }
         }
 
@@ -60,6 +80,16 @@ namespace Zitac.AD.Steps
 
         }
 
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[2];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
+                inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                return inputMappingArray;
+            }
+        }
             public DataDescription[] InputData
             {
                     get {
@@ -72,6 +102,7 @@ namespace Zitac.AD.Steps
                             
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Computer Name"));
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Additional Attributes", true, true, true));
                             return dataDescriptionList.ToArray();                                              
                         }
@@ -95,7 +126,8 @@ namespace Zitac.AD.Steps
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
             string ComputerName = data.Data["Computer Name"] as string;
-            string[] AdditionalAttributes = data.Data["Additional Attributes"] as string[];
+            int? Port = (int?)data.Data["Port"];
+            List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
 
             Credentials ADCredentials = new Credentials();
 
@@ -111,36 +143,39 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
+            List<string> BaseAttributeList = Computer.ComputerAttributes;
+
+            if (AdditionalAttributes != null)
+            {
+                BaseAttributeList.AddRange(AdditionalAttributes);
+            }
+            else
+            {
+                AdditionalAttributes = new List<string>();
+            }
+
+            var Filter = "(&(objectClass=computer)(|(cn=" + ComputerName + ")(dn=" + ComputerName + ")))";
+
             try
             {
-                string distinguishedName = GetDistinguishedName.GetObjectDistinguishedName(GetDistinguishedName.ADObjectType.Computer, ComputerName, ADCredentials.ADUsername, ADCredentials.ADPassword, ADServer);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, BaseAttributeList).ToList();
 
-                string str = string.Empty;
-                string baseLdapPath = string.Format("LDAP://{0}", (object) ADServer);
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectClass=computer)(|(cn=" + ComputerName + ")(dn=" + ComputerName + ")))";
-
-                SearchResult one = directorySearcher.FindOne();
-
-                if (searchRoot != null)
+                Computer FoundComputer = new Computer();
+                if (Results != null && Results.Count != 0)
                 {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
+                    FoundComputer = new Computer(Results[0], AdditionalAttributes);
                 }
-                directorySearcher.Dispose();
-
-                if (one == null)
+                else if (ShowOutcomeforNoResults)
                 {
                     return new ResultData("No Results");
-                    //throw new Exception(string.Format("Unable to find computer with name: '{0}' in the AD", (object) ComputerName));
                 }
 
-                Computer Results = new Computer(one, AdditionalAttributes);
-
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Result", (object) Results);
+                dictionary.Add("Result", (object) FoundComputer);
                 return new ResultData("Done", (IDictionary<string, object>) dictionary);
 
 

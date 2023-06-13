@@ -1,10 +1,7 @@
-using ActiveDirectory;
-using System.DirectoryServices;
 using System.Runtime.Serialization;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System.Collections.Generic;
 using System;
-using System.Runtime;
+using System.DirectoryServices.Protocols;
 
 namespace Zitac.AD.Steps;
 
@@ -42,6 +39,9 @@ namespace Zitac.AD.Steps;
     public string ObjectGUID { get; set; }
 
     [DataMember]
+    public string ObjectSID { get; set; }
+
+    [DataMember]
     public string OperatingSystem { get; set; }
 
     [DataMember]
@@ -74,31 +74,57 @@ namespace Zitac.AD.Steps;
 
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
+
+    public static readonly List<string> ComputerAttributes = new List<String> {
+    "accountexpires",
+    "cn",
+    "description",
+    "distinguishedname",
+    "dnshostname",
+    "lastLogonTimestamp",
+    "location",
+    "managedby",
+    "name",
+    "objectguid",
+    "objectSid",
+    "operatingsystem",
+    "operatingsystemhotfix",
+    "operatingsystemservicepack",
+    "operatingsystemversion",
+    "pwdlastset",
+    "samaccountname",
+    "whenchanged",
+    "whencreated",
+    "logonCount",
+    "userAccountControl"
+};
+
     public Computer()
     {
       
     }
-    public Computer(SearchResult entry, string[] AdditionalAttributes)
+    public Computer(SearchResultEntry entry, List<String> AdditionalAttributes)
     {
-      this.AccountExpires = this.GetDateTimeProperty(entry, "accountexpires");
-      this.CN = this.GetStringProperty(entry, "cn");
-      this.Description = this.GetStringProperty(entry, "description");
-      this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
-      this.DNSHostName = this.GetStringProperty(entry, "dnshostname");
-      this.LastLogonTimeStamp = this.GetDateTimeProperty(entry, "lastLogonTimestamp");
-      this.Location = this.GetStringProperty(entry, "location");
-      this.ManagedBy = this.GetStringProperty(entry, "managedby");
-      this.Name = this.GetStringProperty(entry, "name");
-      this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
-      this.OperatingSystem = this.GetStringProperty(entry, "operatingsystem");
-      this.OperatingSystemHotfix = this.GetStringProperty(entry, "operatingsystemhotfix");
-      this.OperatingSystemServicePack = this.GetStringProperty(entry, "operatingsystemservicepack");
-      this.OperatingSystemVersion = this.GetStringProperty(entry, "operatingsystemversion");
-      this.PasswordLastSet = this.GetDateTimeProperty(entry, "pwdlastset");
-      this.SamAccountName = this.GetStringProperty(entry, "samaccountname");
-      this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
-      this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
-      this.LogonCount = this.GetIntProperty(entry, "logonCount");
+      this.AccountExpires = Converters.GetDateTimeProperty(entry, "accountexpires");
+      this.CN = Converters.GetStringProperty(entry, "cn");
+      this.Description = Converters.GetStringProperty(entry, "description");
+      this.DistinguishedName = Converters.GetStringProperty(entry, "distinguishedname");
+      this.DNSHostName = Converters.GetStringProperty(entry, "dnshostname");
+      this.LastLogonTimeStamp = Converters.GetDateTimeProperty(entry, "lastLogonTimestamp");
+      this.Location = Converters.GetStringProperty(entry, "location");
+      this.ManagedBy = Converters.GetStringProperty(entry, "managedby");
+      this.Name = Converters.GetStringProperty(entry, "name");
+      this.ObjectGUID = new Guid((System.Byte[])Converters.GetBinaryProperty(entry, "objectguid")).ToString();
+      this.ObjectSID = Converters.GetSIDProperty(entry, "objectSid");
+      this.OperatingSystem = Converters.GetStringProperty(entry, "operatingsystem");
+      this.OperatingSystemHotfix = Converters.GetStringProperty(entry, "operatingsystemhotfix");
+      this.OperatingSystemServicePack = Converters.GetStringProperty(entry, "operatingsystemservicepack");
+      this.OperatingSystemVersion = Converters.GetStringProperty(entry, "operatingsystemversion");
+      this.PasswordLastSet = Converters.GetDateTimeProperty(entry, "pwdlastset");
+      this.SamAccountName = Converters.GetStringProperty(entry, "samaccountname");
+      this.WhenChanged = Converters.GetDateTimeProperty(entry, "whenchanged");
+      this.WhenCreated = Converters.GetDateTimeProperty(entry, "whencreated");
+      this.LogonCount = Converters.GetIntProperty(entry, "logonCount");
       this.AccountEnabled = this.IsEnabled(entry);
 
       if(AdditionalAttributes != null)
@@ -108,129 +134,25 @@ namespace Zitac.AD.Steps;
         {
             ExtendedAttributes ToAdd = new ExtendedAttributes();
             ToAdd.Attribute = Attribute;
-            ToAdd.StringValue = this.GetStringProperty(entry, Attribute);
-            ToAdd.DateValue = this.GetDateTimeProperty(entry, Attribute);
-            ToAdd.IntegerValue = this.GetIntProperty(entry, Attribute);
-            ToAdd.BinaryValue = this.GetBinaryProperty(entry, Attribute);
+            ToAdd.StringValue = Converters.GetStringProperty(entry, Attribute);
+            ToAdd.DateValue = Converters.GetDateTimeProperty(entry, Attribute);
+            ToAdd.IntegerValue = Converters.GetIntProperty(entry, Attribute);
+            ToAdd.BinaryValue = Converters.GetBinaryProperty(entry, Attribute);
             AttributeResults.Add(ToAdd);
         }
       this.AdditionalAttributesResult = AttributeResults.ToArray();
        }
       
     }
-    private Object DynamicallyChoosePropertyGetter(SearchResult entry, string propertyName)
+private bool IsEnabled(SearchResultEntry entry)
+{
+    var property = entry.Attributes["userAccountControl"];
+    if (property != null && property.Count != 0)
     {
-      if (entry != null && !string.IsNullOrEmpty(propertyName))
-      {
-        ResultPropertyValueCollection property = entry.Properties[propertyName];
-        if (property != null && property.Count != 0)
-        {
-          string Type = property[0].GetType().ToString();
-          if(Type == "System.Int64" || Type == "System.DateTime")
-          {
-              return GetDateTimeProperty(entry, propertyName);
-          }
-          else if(Type == "System.Int32")
-          {
-              return GetIntProperty(entry, propertyName);
-          }
-          else if(Type == "System.Byte[]")
-          {
-              return GetBinaryProperty(entry, propertyName);
-          }
-          else
-          {
-              return GetStringProperty(entry, propertyName);
-          }
-        }
-      }
-      return null;
-    }
-    private string GetStringProperty(SearchResult entry, string propertyName)
-    {
-      if (entry != null && !string.IsNullOrEmpty(propertyName))
-      {
-        ResultPropertyValueCollection property = entry.Properties[propertyName];
-        if (property != null && property.Count != 0)
-        {
-          return property[0].ToString();
-        }
-        return (string) null;
-      }
-    return (string) null;
-    }
-    private DateTime GetDateTimeProperty(SearchResult entry, string propertyName)
-    {
-      if (entry != null && !string.IsNullOrEmpty(propertyName))
-      {
-        ResultPropertyValueCollection property = entry.Properties[propertyName];
-        if (property != null && property.Count != 0)
-        {
-            if(property[0].GetType().ToString() == "System.Int64")
-            {
-                if(property[0].ToString() == "9223372036854775807")
-                {
-                    return new DateTime();
-                }
-                long date = Convert.ToInt64(property[0]);
-                System.DateTime FormattedDate = System.DateTime.FromFileTime(date);
-                return FormattedDate;
-            }
-            if(property[0].GetType().ToString() == "System.DateTime")
-            {
-                return (DateTime) property[0];
-            }
-          return new DateTime();
-        }
-        return new DateTime();
-      }
-    return new DateTime();
-    }
-    private Int64 GetIntProperty(SearchResult entry, string propertyName)
-    {
-      if (entry != null && !string.IsNullOrEmpty(propertyName))
-      {
-        ResultPropertyValueCollection property = entry.Properties[propertyName];
-        if (property != null && property.Count != 0)
-        {
-            if(property[0].GetType().ToString() == "System.Int64")
-            {
-                return (Int64) property[0];
-            }
-            if(property[0].GetType().ToString() == "System.Int32"){
-              return (Int64) Convert.ToInt64(property[0]);
-            }
-          return new Int64();
-        }
-        return new Int64();
-      }
-    return new Int64();
-    }
-    private System.Byte[] GetBinaryProperty(SearchResult entry, string propertyName)
-    {
-      if (entry != null && !string.IsNullOrEmpty(propertyName))
-      {
-        ResultPropertyValueCollection property = entry.Properties[propertyName];
-        if (property != null && property.Count != 0)
-        {
-            if(property[0].GetType().ToString() == "System.Byte[]")
-            {
-                return (System.Byte[]) property[0];
-            }
-          return (System.Byte[]) null;
-        }
-        return (System.Byte[]) null;
-      }
-    return (System.Byte[]) null;
-    }
-        private bool IsEnabled(SearchResult entry) {
-            ResultPropertyValueCollection property = entry.Properties["userAccountControl"];
-            if (property != null && property.Count != 0)
-            {
-                int flags = (int)property[0];
+        int flags = Int32.Parse((string)property[0]);
 
-                return !Convert.ToBoolean(flags & 0x0002);
-            }
-            return new bool();
+        return !Convert.ToBoolean(flags & 0x0002);
     }
+    return new bool();
+}
   }

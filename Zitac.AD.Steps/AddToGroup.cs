@@ -1,36 +1,31 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
-using System.ComponentModel;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 using System.Security.Principal;
 
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Add To Group", "Integration", "Active Directory", "Zitac", "Group")]
     [Writable]
-    public class AddToGroup : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class AddToGroup : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
-
         [WritableValue]
         private bool integratedAuthentication;
 
-        [PropertyClassification(new string[] { "Integrated Authentication" })]
+        [WritableValue]
+        private bool useSSL;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -45,6 +40,38 @@ namespace Zitac.AD.Steps
             }
         }
 
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
+            }
+        }
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[1];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                return inputMappingArray;
+            }
+        }
         public DataDescription[] InputData
         {
             get
@@ -57,6 +84,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Group Name or DN"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Object Account Name or DN"));
                 return dataDescriptionList.ToArray();
@@ -80,8 +108,11 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
+            int? Port = (int?)data.Data["Port"];
             string Group = data.Data["Group Name or DN"] as string;
             string Object = data.Data["Object Account Name or DN"] as string;
+
+            string Filter = string.Empty;
 
             Credentials ADCredentials = new Credentials();
 
@@ -96,60 +127,66 @@ namespace Zitac.AD.Steps
                 Credentials InputCredentials = data.Data["Credentials"] as Credentials;
                 ADCredentials = InputCredentials;
             }
-
+            Filter = "(&(objectCategory=group)(objectClass=group)(|(sAMAccountName=" + Group + ")(distinguishedName=" + Group + ")))";
             try
             {
+                string FoundGroup = string.Empty;
+                string FoundObject = string.Empty;
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
-                string baseLdapPath = string.Format("LDAP://{0}", (object)ADServer);
-                DirectoryEntry searchRoot = new DirectoryEntry(baseLdapPath, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                DirectorySearcher directorySearcher = new DirectorySearcher(searchRoot);
-                directorySearcher.Filter = "(&(objectCategory=group)(objectClass=group)(|(sAMAccountName=" + Group + ")(distinguishedName=" + Group + ")))";
 
-                SearchResult FoundGroup = directorySearcher.FindOne();
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                List<SearchResultEntry> GroupResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, new List<string> { "distinguishedname", "objectSid" }).ToList();
 
-                DirectorySearcher directorySearcherObject = new DirectorySearcher(searchRoot);
-                directorySearcherObject.Filter = "(|(sAMAccountName=" + Object + ")(distinguishedName=" + Object + "))";
-
-                SearchResult FoundObject = directorySearcherObject.FindOne();
-
-                if (searchRoot != null)
+                if (GroupResults != null && GroupResults.Count != 0)
                 {
-                    searchRoot.Close();
-                    searchRoot.Dispose();
+                    FoundGroup = Converters.GetStringProperty(GroupResults[0], "distinguishedname");
                 }
-                directorySearcher.Dispose();
-
-                if (FoundGroup == null)
+                else
                 {
                     throw new Exception(string.Format("Unable to find group with name or DN: '{0}' in the AD", (object)Group));
                 }
 
-                if (FoundObject == null)
+                Filter = "(|(sAMAccountName=" + Object + ")(distinguishedName=" + Object + "))";
+                List<SearchResultEntry> ObjectResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree,  Filter, new List<string> { "distinguishedname", "primaryGroupID", "memberof" }).ToList();
+
+                if (ObjectResults != null && ObjectResults.Count != 0)
+                {
+                    FoundObject = Converters.GetStringProperty(ObjectResults[0], "distinguishedname");
+                }
+                else
                 {
                     throw new Exception(string.Format("Unable to find Object with name or DN: '{0}' in the AD", (object)Object));
                 }
 
-                DirectoryEntry ent = FoundGroup.GetDirectoryEntry();
-                DirectoryEntry Obj = FoundObject.GetDirectoryEntry();
-
-
-                string objectID = (new SecurityIdentifier((byte[])ent.Properties["objectSid"][0],0)).ToString();
+                string objectID = Converters.ConvertSidToString(Converters.GetBinaryProperty(GroupResults[0], "objectSid"));
                 string GroupSid = objectID.Split("-").Last();
 
-                if(GroupSid == Obj.Properties["primaryGroupID"].Value.ToString()) {return new ResultData("Already Member");}
-                PropertyValueCollection groups = Obj.Properties["memberOf"];
-                foreach (string g in groups)
+                if (GroupSid == Converters.GetStringProperty(ObjectResults[0], "primaryGroupID")) { return new ResultData("Already Member"); }
+                foreach (string g in Converters.GetStringListProperty(ObjectResults[0], "memberof"))
                 {
 
-                    if (g.Equals(ent.Properties["distinguishedName"].Value))
+                    if (g.Equals(FoundGroup))
                     {
                         return new ResultData("Already Member");
                     }
                 }
-                ent.Properties["member"].Add(Obj.Properties["distinguishedName"].Value);
-                ent.CommitChanges();
 
+                DirectoryAttributeModification attributeModification = new DirectoryAttributeModification();
+                attributeModification.Name = "member";
+                attributeModification.Operation = DirectoryAttributeOperation.Add;
+                attributeModification.Add(FoundObject);
+                ModifyRequest modifyRequest = new ModifyRequest(FoundGroup, new DirectoryAttributeModification[1]
+                {
+                    attributeModification
+                });
+                ModifyResponse response = (ModifyResponse)connection.SendRequest((DirectoryRequest)modifyRequest);
 
+                if (response.ResultCode != ResultCode.Success)
+                {
+                    throw new Exception("Failed to add user to group. Result code: " + response.ResultCode + ". Error: " + response.ErrorMessage);
+                }
             }
             catch (Exception e)
             {

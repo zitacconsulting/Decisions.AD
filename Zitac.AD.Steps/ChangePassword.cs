@@ -1,35 +1,33 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
 using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
 using System;
+using System.Text;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
-using DecisionsFramework.ServiceLayer;
 using DecisionsFramework.Design.Flow.CoreSteps;
-using System.ComponentModel;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 
 namespace Zitac.AD.Steps
 {
-    [AutoRegisterStep("Change Password", "Integration", "Active Directory", "Zitac")]
+    [AutoRegisterStep("Change Password", "Integration", "Active Directory", "Zitac", "User")]
     [Writable]
-    public class ChangePassword : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class ChangePassword : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
      
         [WritableValue]
         private bool integratedAuthentication;
 
-        [PropertyClassification(new string[]{"Integrated Authentication"})]
+        [WritableValue]
+        private bool useSSL = true;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -44,6 +42,38 @@ namespace Zitac.AD.Steps
             }
         }
 
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
+            {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
+
+            }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
+            }
+        }
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[1];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                return inputMappingArray;
+            }
+        }
             public DataDescription[] InputData
             {
                     get {
@@ -55,7 +85,8 @@ namespace Zitac.AD.Steps
                             }
                             
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Username"));
+                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
+                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Username or DN"));
                             dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "New Password")
                                 {
                                 EditorAttribute = (PropertyEditorAttribute) new PasswordTextAttribute()
@@ -78,7 +109,8 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string Username = data.Data["Username"] as string;
+            int? Port = (int?)data.Data["Port"];
+            string Username = data.Data["Username or DN"] as string;
             string Password = data.Data["New Password"] as string;
 
             Credentials ADCredentials = new Credentials();
@@ -94,17 +126,39 @@ namespace Zitac.AD.Steps
                 Credentials InputCredentials = data.Data["Credentials"] as Credentials;
                 ADCredentials = InputCredentials;
             }
-
+            var Filter = "(&(objectClass=user)(|(sAMAccountName=" + Username + ")(distinguishedname=" + Username + ")))";
             try
             {
-                string distinguishedName = GetDistinguishedName.GetObjectDistinguishedName(GetDistinguishedName.ADObjectType.User, Username, ADCredentials.ADUsername, ADCredentials.ADPassword, ADServer);
-                if (string.IsNullOrEmpty(distinguishedName))
-                    throw new Exception(string.Format("Unable to find user with login name: '{0}' in the AD", (object) Username));
-                DirectoryEntry directoryEntry = new DirectoryEntry(distinguishedName, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                directoryEntry.Invoke("SetPassword", new object[] { Password });
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                List<SearchResultEntry> UserResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, new List<string> { "distinguishedname", "objectSid" }).ToList();
+                string FoundUserDN = String.Empty;
 
-                directoryEntry.CommitChanges();
-                directoryEntry.Close();
+                if (UserResults != null && UserResults.Count != 0)
+                {
+                    FoundUserDN = Converters.GetStringProperty(UserResults[0], "distinguishedname");
+                }
+                else
+                {
+                    throw new Exception(string.Format("Unable to find user with name or DN: '{0}' in the AD", Username));
+                }
+
+
+                DirectoryAttributeModification attributeModification = new DirectoryAttributeModification();
+                attributeModification.Name = "unicodePwd";
+                attributeModification.Operation = DirectoryAttributeOperation.Replace;
+                attributeModification.Add(Encoding.Unicode.GetBytes($"\"{Password}\""));
+                ModifyRequest modifyRequest = new ModifyRequest(FoundUserDN, new DirectoryAttributeModification[1]
+                {
+                    attributeModification
+                });
+                ModifyResponse response = (ModifyResponse)connection.SendRequest((DirectoryRequest)modifyRequest);
+
+                if (response.ResultCode != ResultCode.Success)
+                {
+                    throw new Exception("Failed to change user password. Result code: " + response.ResultCode + ". Error: " + response.ErrorMessage);
+                }
             }
             catch (Exception e)
             {

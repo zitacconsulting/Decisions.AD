@@ -1,11 +1,7 @@
-using ActiveDirectory;
-using System.DirectoryServices;
 using System.Runtime.Serialization;
-using DecisionsFramework.ServiceLayer.Services.ContextData;
 using System.Collections.Generic;
-using System.Collections;
 using System;
-using System.Runtime;
+using System.DirectoryServices.Protocols;
 
 namespace Zitac.AD.Steps;
 
@@ -33,6 +29,9 @@ public class Group
 
     [DataMember]
     public string ObjectGUID { get; set; }
+    
+    [DataMember]
+    public string ObjectSID { get; set; }
 
     [DataMember]
     public string SamAccountName { get; set; }
@@ -46,25 +45,41 @@ public class Group
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
+    public static readonly List<string> GroupAttributes = new List<String> {
+    "sAMAccountName",
+    "description",
+    "mail",
+    "managedby",
+    "cn",
+    "distinguishedname",
+    "name",
+    "objectguid",
+    "objectSid",
+    "whenchanged",
+    "whencreated"
+    };
+
     public Group()
     {
-        
+
     }
-    public Group(SearchResult entry, string[] AdditionalAttributes)
+    public Group(SearchResultEntry entry, List<String> AdditionalAttributes)
     {
-        this.SamAccountName = this.GetStringProperty(entry, "samaccountname");
-        this.Description = this.GetStringProperty(entry, "description");
-        this.Email = this.GetStringProperty(entry, "mail");
-        this.ManagedBy = this.GetStringProperty(entry, "managedby");
-        this.CN = this.GetStringProperty(entry, "cn");
-        this.DistinguishedName = this.GetStringProperty(entry, "distinguishedname");
-        this.Name = this.GetStringProperty(entry, "name");
-        try {
-        this.ObjectGUID = new Guid((System.Byte[])this.GetBinaryProperty(entry, "objectguid")).ToString();
+        this.SamAccountName = Converters.GetStringProperty(entry, "samaccountname");
+        this.Description = Converters.GetStringProperty(entry, "description");
+        this.Email = Converters.GetStringProperty(entry, "mail");
+        this.ManagedBy = Converters.GetStringProperty(entry, "managedby");
+        this.CN = Converters.GetStringProperty(entry, "cn");
+        this.DistinguishedName = Converters.GetStringProperty(entry, "distinguishedname");
+        this.Name = Converters.GetStringProperty(entry, "name");
+        try
+        {
+            this.ObjectGUID = new Guid((System.Byte[])Converters.GetBinaryProperty(entry, "objectguid")).ToString();
         }
-        catch{}
-        this.WhenChanged = this.GetDateTimeProperty(entry, "whenchanged");
-        this.WhenCreated = this.GetDateTimeProperty(entry, "whencreated");
+        catch { }
+        this.ObjectSID = Converters.GetSIDProperty(entry, "objectSid");
+        this.WhenChanged = Converters.GetDateTimeProperty(entry, "whenchanged");
+        this.WhenCreated = Converters.GetDateTimeProperty(entry, "whencreated");
 
         if (AdditionalAttributes != null)
         {
@@ -73,121 +88,27 @@ public class Group
             {
                 ExtendedAttributes ToAdd = new ExtendedAttributes();
                 ToAdd.Attribute = Attribute;
-                ToAdd.StringValue = this.GetStringProperty(entry, Attribute);
-                ToAdd.DateValue = this.GetDateTimeProperty(entry, Attribute);
-                ToAdd.IntegerValue = this.GetIntProperty(entry, Attribute);
-                ToAdd.BinaryValue = this.GetBinaryProperty(entry, Attribute);
+                ToAdd.StringValue = Converters.GetStringProperty(entry, Attribute);
+                ToAdd.DateValue = Converters.GetDateTimeProperty(entry, Attribute);
+                ToAdd.IntegerValue = Converters.GetIntProperty(entry, Attribute);
+                ToAdd.BinaryValue = Converters.GetBinaryProperty(entry, Attribute);
                 AttributeResults.Add(ToAdd);
             }
             this.AdditionalAttributesResult = AttributeResults.ToArray();
         }
 
     }
-    private Object DynamicallyChoosePropertyGetter(SearchResult entry, string propertyName)
+
+    private bool IsEnabled(SearchResultEntry entry)
     {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
+        var property = entry.Attributes["userAccountControl"];
+        if (property != null && property.Count != 0)
         {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                string Type = property[0].GetType().ToString();
-                if (Type == "System.Int64" || Type == "System.DateTime")
-                {
-                    return GetDateTimeProperty(entry, propertyName);
-                }
-                else if (Type == "System.Int32")
-                {
-                    return GetIntProperty(entry, propertyName);
-                }
-                else if (Type == "System.Byte[]")
-                {
-                    return GetBinaryProperty(entry, propertyName);
-                }
-                else
-                {
-                    return GetStringProperty(entry, propertyName);
-                }
-            }
+            int flags = Int32.Parse((string)property[0]);
+
+            return !Convert.ToBoolean(flags & 0x0002);
         }
-        return null;
-    }
-    private string GetStringProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                return property[0].ToString();
-            }
-            return (string)null;
-        }
-        return (string)null;
-    }
-    private DateTime GetDateTimeProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Int64")
-                {
-                    if (property[0].ToString() == "9223372036854775807")
-                    {
-                        return new DateTime();
-                    }
-                    long date = Convert.ToInt64(property[0]);
-                    System.DateTime FormattedDate = System.DateTime.FromFileTime(date);
-                    return FormattedDate;
-                }
-                if (property[0].GetType().ToString() == "System.DateTime")
-                {
-                    return (DateTime)property[0];
-                }
-                return new DateTime();
-            }
-            return new DateTime();
-        }
-        return new DateTime();
-    }
-    private Int64 GetIntProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Int64")
-                {
-                    return (Int64)property[0];
-                }
-                if (property[0].GetType().ToString() == "System.Int32")
-                {
-                    return (Int64)Convert.ToInt64(property[0]);
-                }
-                return new Int64();
-            }
-            return new Int64();
-        }
-        return new Int64();
-    }
-    private System.Byte[] GetBinaryProperty(SearchResult entry, string propertyName)
-    {
-        if (entry != null && !string.IsNullOrEmpty(propertyName))
-        {
-            ResultPropertyValueCollection property = entry.Properties[propertyName];
-            if (property != null && property.Count != 0)
-            {
-                if (property[0].GetType().ToString() == "System.Byte[]")
-                {
-                    return (System.Byte[])property[0];
-                }
-                return (System.Byte[])null;
-            }
-            return (System.Byte[])null;
-        }
-        return (System.Byte[])null;
+        return new bool();
     }
 
 }
