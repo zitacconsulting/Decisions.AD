@@ -112,8 +112,8 @@ namespace Zitac.AD.Steps
 
             if(IntegratedAuthentication)
             {
-                ADCredentials.ADUsername = null;
-                ADCredentials.ADPassword = null;
+                ADCredentials.Username = null;
+                ADCredentials.Password = null;
                   
             }
             else
@@ -125,7 +125,7 @@ namespace Zitac.AD.Steps
             var Filter = "(&(objectClass=user)(|(sAMAccountName=" + Username + ")(distinguishedname=" + Username + ")))";
             try
             {
-                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = LDAPHelper.GetBaseDN(connection);
                 List<SearchResultEntry> UserResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, new List<string> { "distinguishedname", "objectSid" }).ToList();
@@ -147,6 +147,7 @@ namespace Zitac.AD.Steps
                     throw new Exception("Failed to delete user. Result code: " + deleteResponse.ResultCode + ". Error: " + deleteResponse.ErrorMessage);
                 }
                 connection.Dispose();
+                return new ResultData("Done");
             }
             catch (Exception e)
             {
@@ -160,7 +161,6 @@ namespace Zitac.AD.Steps
                 });
 
             }
-                return new ResultData("Done");
         }
     }
 

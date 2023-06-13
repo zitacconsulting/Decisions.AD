@@ -11,7 +11,8 @@ namespace Zitac.AD.Steps
     {
         public static LdapConnection GenerateLDAPConnection(IntegrationOptions Options)
         {
-
+Console.WriteLine("hej");
+Console.WriteLine(Options.Credentials.Username);
             var di = new LdapDirectoryIdentifier(server: Options.Host, Options.Port, fullyQualifiedDnsHostName: true, connectionless: false);
             var connection = new LdapConnection(di);
             if (Options.IntegratedAuthentication)
@@ -20,7 +21,7 @@ namespace Zitac.AD.Steps
             }
             else
             {
-                connection.Credential = new NetworkCredential(Options.Login, Options.Password);
+                connection.Credential = new NetworkCredential(Options.Credentials.Username, Options.Credentials.Password, Options.Credentials.Domain);
                 connection.AuthType = AuthType.Basic;
 
             }

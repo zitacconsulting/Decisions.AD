@@ -4,15 +4,14 @@ namespace Zitac.AD.Steps
 {
     public class IntegrationOptions
     {
-         public readonly string Host;
+        public readonly string Host;
         public readonly int Port;
-        public readonly string Login;
-        public readonly string Password;
+        public readonly Credentials Credentials;
         public readonly bool UseSSL;
         public readonly bool IgnoreInvalidCert;
         public readonly bool IntegratedAuthentication;
 
-        public IntegrationOptions(string host, int? port, string login, string password, bool useSSL, bool ignoreInvalidCert, bool integratedAuthentication)
+        public IntegrationOptions(string host, int? port, Credentials credentials, bool useSSL, bool ignoreInvalidCert, bool integratedAuthentication)
         {
             Host = host ?? throw new ArgumentNullException(nameof(host));
             if(port == 0 || port == null) {
@@ -26,8 +25,7 @@ namespace Zitac.AD.Steps
             else {
                 Port = (int)port;
             }
-            Login = login;
-            Password = password;
+            Credentials = credentials;
             UseSSL = useSSL;
             IgnoreInvalidCert = ignoreInvalidCert;
             IntegratedAuthentication = integratedAuthentication;

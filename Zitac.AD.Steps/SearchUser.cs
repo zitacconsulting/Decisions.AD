@@ -334,8 +334,8 @@ namespace Zitac.AD.Steps
 
             if (IntegratedAuthentication)
             {
-                ADCredentials.ADUsername = null;
-                ADCredentials.ADPassword = null;
+                ADCredentials.Username = null;
+                ADCredentials.Password = null;
 
             }
             else
@@ -360,7 +360,7 @@ namespace Zitac.AD.Steps
 
             try
             {
-                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
 
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);

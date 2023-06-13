@@ -20,7 +20,7 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
-        private bool useSSL;
+        private bool useSSL = true;
 
         [WritableValue]
         private bool ignoreInvalidCert;
@@ -150,8 +150,8 @@ namespace Zitac.AD.Steps
 
             if (IntegratedAuthentication)
             {
-                ADCredentials.ADUsername = null;
-                ADCredentials.ADPassword = null;
+                ADCredentials.Username = null;
+                ADCredentials.Password = null;
 
             }
             else
@@ -174,7 +174,7 @@ namespace Zitac.AD.Steps
             var Filter = "(&(objectClass=group)(objectCategory=group)(|(sAMAccountName=" + GroupName + ")(distinguishedname=" + GroupName + ")))";
             try
             {
-                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = LDAPHelper.GetBaseDN(connection);

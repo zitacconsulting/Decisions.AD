@@ -1,5 +1,7 @@
 using System.DirectoryServices.Protocols;
 using System.Runtime.Serialization;
+using System.Collections.Generic;
+using System;
 
 
 namespace Zitac.AD.Steps;
@@ -17,6 +19,12 @@ namespace Zitac.AD.Steps;
 
     [DataMember]
     public string Site { get; set; }
+
+    public static readonly List<string> DCAttributes = new List<String> {
+    "name",
+    "dNSHostName",
+    "siteNames",
+};
 
     public DomainController(SearchResultEntry entry)
     {

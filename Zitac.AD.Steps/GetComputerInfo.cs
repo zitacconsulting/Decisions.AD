@@ -1,4 +1,3 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
@@ -21,7 +20,7 @@ namespace Zitac.AD.Steps
         private bool integratedAuthentication;
 
         [WritableValue]
-        private bool useSSL;
+        private bool useSSL = true;
 
         [WritableValue]
         private bool ignoreInvalidCert;
@@ -133,8 +132,8 @@ namespace Zitac.AD.Steps
 
             if(IntegratedAuthentication)
             {
-                ADCredentials.ADUsername = null;
-                ADCredentials.ADPassword = null;
+                ADCredentials.Username = null;
+                ADCredentials.Password = null;
                   
             }
             else
@@ -158,7 +157,7 @@ namespace Zitac.AD.Steps
 
             try
             {
-                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials.ADUsername, ADCredentials.ADPassword, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = LDAPHelper.GetBaseDN(connection);

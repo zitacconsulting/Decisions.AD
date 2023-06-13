@@ -1,29 +1,31 @@
-using DecisionsFramework.Design.Flow;
-using DecisionsFramework.Design.Properties;
+
 using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
 using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
-using System;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 
 namespace Zitac.AD.Steps;
-
+    [Writable]
+    [DataContract]
         public class Credentials : IDebuggerJsonProvider
     {
         [WritableValue]
-        public string ADUsername { get; set; }
+        public string Username { get; set; }
+        [WritableValue]
+        public string Domain { get; set; }
 
         [WritableValue]
         [PasswordText]
-        public string ADPassword { get; set; }
+        public string Password { get; set; }
 
         public object GetJsonDebugView()
         {
                 return new
                 {
-                   ADUsername = this.ADUsername,
-                   ADPassword = "********"
+                   Username = Username,
+                   Domain = Domain,
+                   Password = "********"
                 };
         }
     }

@@ -1,35 +1,33 @@
-using ActiveDirectory;
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
-using DecisionsFramework.Design.Properties.Attributes;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
-using DecisionsFramework.Design.Flow.Service.Debugging.DebugData;
 using System;
 using System.Collections.Generic;
-using System.DirectoryServices;
+using System.DirectoryServices.Protocols;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using DecisionsFramework.Design.Flow.Mapping;
-using DecisionsFramework.ServiceLayer;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 using DecisionsFramework.Design.Flow.CoreSteps;
 using System.ComponentModel;
+
 
 namespace Zitac.AD.Steps
 {
     [AutoRegisterStep("Set Logon Workstation", "Integration", "Active Directory", "Zitac")]
     [Writable]
-    public class SetLogonWorkstation : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer //, INotifyPropertyChanged
+    public class SetLogonWorkstation : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
-     
+
         [WritableValue]
         private bool integratedAuthentication;
 
-        [PropertyClassification(new string[]{"Integrated Authentication"})]
+        [WritableValue]
+        private bool useSSL = true;
+
+        [WritableValue]
+        private bool ignoreInvalidCert;
+
+        [PropertyClassification(6, "Use Integrated Authentication", new string[] { "Connection" })]
         public bool IntegratedAuthentication
         {
             get { return integratedAuthentication; }
@@ -44,70 +42,123 @@ namespace Zitac.AD.Steps
             }
         }
 
-            public DataDescription[] InputData
+        [PropertyClassification(7, "Use SSL", new string[] { "Connection" })]
+        public bool UseSSL
+        {
+            get { return useSSL; }
+            set
             {
-                    get {
-                        
-                        List<DataDescription> dataDescriptionList = new List<DataDescription>();
-                            if(!IntegratedAuthentication)
-                            {
-                                dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (Credentials)), "Credentials"));
-                            }
-                            
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Username"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Workstation"));
-                            return dataDescriptionList.ToArray();                                              
-                        }
-            }
-    
-            public override OutcomeScenarioData[] OutcomeScenarios {
-                get {
+                useSSL = value;
+                this.OnPropertyChanged(nameof(UseSSL));
+                this.OnPropertyChanged("IgnoreInvalidCert");
 
-                    return new[] {
-                    new OutcomeScenarioData("Done"),
-                    new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")), 
-                }; 
-                }
             }
+        }
+
+        [BooleanPropertyHidden("UseSSL", false)]
+        [PropertyClassification(8, "Ignore Certificate Errors", new string[] { "Connection" })]
+        public bool IgnoreInvalidCert
+        {
+            get { return ignoreInvalidCert; }
+            set
+            {
+                ignoreInvalidCert = value;
+            }
+        }
+
+
+        public IInputMapping[] DefaultInputs
+        {
+            get
+            {
+                IInputMapping[] inputMappingArray = new IInputMapping[1];
+                inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
+                return inputMappingArray;
+            }
+        }
+
+        public DataDescription[] InputData
+        {
+            get
+            {
+
+                List<DataDescription> dataDescriptionList = new List<DataDescription>();
+                if (!IntegratedAuthentication)
+                {
+                    dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Credentials)), "Credentials"));
+                }
+
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Username or DN"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Workstation"));
+                return dataDescriptionList.ToArray();
+            }
+        }
+
+        public override OutcomeScenarioData[] OutcomeScenarios
+        {
+            get
+            {
+
+                return new[] {
+                    new OutcomeScenarioData("Done"),
+                    new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")),
+                };
+            }
+        }
 
         public ResultData Run(StepStartData data)
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string Username = data.Data["Username"] as string;
-            string Workstation = data.Data["Workstation"] as string;
-
+            int? Port = (int?)data.Data["Port"];
+            string Username = data.Data["Username or DN"] as string;
+            
             Credentials ADCredentials = new Credentials();
 
-            if(IntegratedAuthentication)
-            {
-                ADCredentials.ADUsername = null;
-                ADCredentials.ADPassword = null;
-                  
-            }
-            else
+            if (!IntegratedAuthentication)
             {
                 Credentials InputCredentials = data.Data["Credentials"] as Credentials;
                 ADCredentials = InputCredentials;
             }
-
+            var Filter = "(&(objectClass=user)(|(sAMAccountName=" + Username + ")(distinguishedname=" + Username + ")))";
             try
             {
-                string distinguishedName = GetDistinguishedName.GetObjectDistinguishedName(GetDistinguishedName.ADObjectType.User, Username, ADCredentials.ADUsername, ADCredentials.ADPassword, ADServer);
-                if (string.IsNullOrEmpty(distinguishedName))
-                    throw new Exception(string.Format("Unable to find user with login name: '{0}' in the AD", (object) Username));
-                DirectoryEntry directoryEntry = new DirectoryEntry(distinguishedName, ADCredentials.ADUsername, ADCredentials.ADPassword);
-                directoryEntry.Properties["userWorkstations"].Clear();
-                directoryEntry.Properties["userWorkstations"].Add(Workstation);
 
-                directoryEntry.CommitChanges();
-                directoryEntry.Close();
+                IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
+                LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
+                string BaseDN = LDAPHelper.GetBaseDN(connection);
+                List<SearchResultEntry> UserResults = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, new List<string> { "distinguishedname"}).ToList();
+                string FoundUserDN = String.Empty;
+
+                if (UserResults != null && UserResults.Count != 0)
+                {
+                    FoundUserDN = Converters.GetStringProperty(UserResults[0], "distinguishedname");
+                }
+                else
+                {
+                    throw new Exception(string.Format("Unable to find user with name or DN: '{0}' in the AD", Username));
+                }
+
+                ModifyRequest modifyRequest = new ModifyRequest(FoundUserDN);
+                    DirectoryAttributeModification ToAddAttribute = LDAPHelper.CreateAttributeModification(data, new AttributeValues("Workstation","userWorkstations"));
+                    if (ToAddAttribute != null) { modifyRequest.Modifications.Add(ToAddAttribute); }
+
+                ModifyResponse response = (ModifyResponse)connection.SendRequest((DirectoryRequest)modifyRequest);
+                if (response.ResultCode != ResultCode.Success)
+                {
+                    throw new Exception("Failed to change user attributes. Result code: " + response.ResultCode + ". Error: " + response.ErrorMessage);
+                }
+                
+                connection.Dispose();
+                return new ResultData("Done");
+
             }
             catch (Exception e)
             {
                 string ExceptionMessage = e.ToString();
-                return new ResultData("Error", (IDictionary<string, object>) new Dictionary<string, object>()
+                return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
                 {
                 {
                     "Error Message",
@@ -116,7 +167,6 @@ namespace Zitac.AD.Steps
                 });
 
             }
-                return new ResultData("Done");
         }
     }
 }
