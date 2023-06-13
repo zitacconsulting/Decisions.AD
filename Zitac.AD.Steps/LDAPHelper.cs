@@ -11,8 +11,6 @@ namespace Zitac.AD.Steps
     {
         public static LdapConnection GenerateLDAPConnection(IntegrationOptions Options)
         {
-Console.WriteLine("hej");
-Console.WriteLine(Options.Credentials.Username);
             var di = new LdapDirectoryIdentifier(server: Options.Host, Options.Port, fullyQualifiedDnsHostName: true, connectionless: false);
             var connection = new LdapConnection(di);
             if (Options.IntegratedAuthentication)
