@@ -6,11 +6,8 @@ using System.DirectoryServices.Protocols;
 namespace Zitac.AD.Steps;
 
 [DataContract]
-public class Group
+public class OrganizationalUnit
 {
-
-    [DataMember]
-    public string CN { get; set; }
 
     [DataMember]
     public string Description { get; set; }
@@ -25,17 +22,8 @@ public class Group
     public string Name { get; set; }
 
     [DataMember]
-    public string Email { get; set; }
-
-    [DataMember]
     public string ObjectGUID { get; set; }
     
-    [DataMember]
-    public string ObjectSID { get; set; }
-
-    [DataMember]
-    public string SamAccountName { get; set; }
-
     [DataMember]
     public DateTime WhenChanged { get; set; }
 
@@ -45,39 +33,31 @@ public class Group
     [DataMember]
     public ExtendedAttributes[] AdditionalAttributesResult { get; set; }
 
-    public static readonly List<string> GroupAttributes = new List<String> {
-    "sAMAccountName",
+    public static readonly List<string> OUAttributes = new List<String> {
     "description",
-    "mail",
-    "managedby",
-    "cn",
     "distinguishedname",
+    "managedby",
     "name",
     "objectguid",
-    "objectSid",
     "whenchanged",
     "whencreated"
     };
 
-    public Group()
+    public OrganizationalUnit()
     {
 
     }
-    public Group(SearchResultEntry entry, List<String> AdditionalAttributes)
+    public OrganizationalUnit(SearchResultEntry entry, List<String> AdditionalAttributes)
     {
-        this.SamAccountName = Converters.GetStringProperty(entry, "samaccountname");
         this.Description = Converters.GetStringProperty(entry, "description");
-        this.Email = Converters.GetStringProperty(entry, "mail");
-        this.ManagedBy = Converters.GetStringProperty(entry, "managedby");
-        this.CN = Converters.GetStringProperty(entry, "cn");
         this.DistinguishedName = Converters.GetStringProperty(entry, "distinguishedname");
+        this.ManagedBy = Converters.GetStringProperty(entry, "managedby");
         this.Name = Converters.GetStringProperty(entry, "name");
         try
         {
             this.ObjectGUID = new Guid((System.Byte[])Converters.GetBinaryProperty(entry, "objectguid")).ToString();
         }
         catch { }
-        this.ObjectSID = Converters.GetSIDProperty(entry, "objectSid");
         this.WhenChanged = Converters.GetDateTimeProperty(entry, "whenchanged");
         this.WhenCreated = Converters.GetDateTimeProperty(entry, "whencreated");
 
