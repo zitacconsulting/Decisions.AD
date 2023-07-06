@@ -223,21 +223,23 @@ namespace Zitac.AD.Steps
                     Filter = "(|";
                 foreach (SearchParameters CurrParameter in ParametersList)
                 {
-                    object ParameterValue = data.Data[CurrParameter.Alias] as object;
-
-                    string Type = ParameterValue.GetType().ToString();
-                    string TextSearchValue;
-
-                    if (Type == "System.DateTime")
+                    string TextSearchValue = null;
+                    if (!new[] { "Exists", "DoesNotExist" }.Contains(CurrParameter.MatchCriteria))
                     {
-                        DateTime SearchValue = (DateTime)ParameterValue;
-                        TextSearchValue = SearchValue.ToFileTime().ToString();
-                    }
-                    else
-                    {
-                        TextSearchValue = ParameterValue.ToString();
-                    }
+                        object ParameterValue = data.Data[CurrParameter.Alias] as object;
 
+                        string Type = ParameterValue.GetType().ToString();
+
+                        if (Type == "System.DateTime")
+                        {
+                            DateTime SearchValue = (DateTime)ParameterValue;
+                            TextSearchValue = SearchValue.ToFileTime().ToString();
+                        }
+                        else
+                        {
+                            TextSearchValue = ParameterValue.ToString();
+                        }
+                    }
                     switch (CurrParameter.MatchCriteria)
                     {
                         case "Equals":
