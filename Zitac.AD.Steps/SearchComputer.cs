@@ -118,7 +118,7 @@ namespace Zitac.AD.Steps
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Search Base (DN)" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
                 inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
-                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() {InputDataName = "Scope", Value = SearchScope.Subtree};
+                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() { InputDataName = "Scope", Value = SearchScope.Subtree };
                 return inputMappingArray;
             }
         }
@@ -148,7 +148,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Search Base (DN)"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(SearchScope)), "Scope", false, true, true));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
@@ -158,19 +158,26 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchParameters CurrParameter in ParametersList)
                     {
-                        if (CurrParameter.DataType == "Date") {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), CurrParameter.Alias));
+                        if (!new[] { "Exists", "DoesNotExist" }.Contains(CurrParameter.MatchCriteria))
+                        {
+                            if (CurrParameter.DataType == "Date")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), CurrParameter.Alias));
+                            }
+                            else if (CurrParameter.DataType == "Int32")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int32)), CurrParameter.Alias));
+                            }
+                            else if (CurrParameter.DataType == "Int64")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int64)), CurrParameter.Alias));
+                            }
+                            else
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter.Alias));
+                            }
+
                         }
-                        else if (CurrParameter.DataType == "Int32") {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int32)), CurrParameter.Alias));
-                        }
-                        else if (CurrParameter.DataType == "Int64") {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int64)), CurrParameter.Alias));
-                        }
-                        else {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter.Alias));
-                        }
-                        
                     }
                 }
 
@@ -328,10 +335,12 @@ namespace Zitac.AD.Steps
 
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = string.Empty;
-                if(String.IsNullOrEmpty(BaseSearch)) {
+                if (String.IsNullOrEmpty(BaseSearch))
+                {
                     BaseDN = LDAPHelper.GetBaseDN(connection);
                 }
-                else {
+                else
+                {
                     BaseDN = BaseSearch;
                 }
                 List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, Scope, Filter, BaseAttributeList).ToList();

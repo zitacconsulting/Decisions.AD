@@ -25,7 +25,7 @@ namespace Zitac.AD.Steps
 
         [WritableValue]
         private bool ignoreInvalidCert;
- 
+
         [WritableValue]
         private bool combineFiltersUsingAnd;
 
@@ -141,7 +141,7 @@ namespace Zitac.AD.Steps
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Search Base (DN)" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
                 inputMappingArray[2] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
-                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() {InputDataName = "Scope", Value = SearchScope.Subtree};
+                inputMappingArray[3] = (IInputMapping)new ConstantInputMapping() { InputDataName = "Scope", Value = SearchScope.Subtree };
                 return inputMappingArray;
             }
         }
@@ -171,7 +171,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(SearchScope)), "Scope", false, true, true));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Search Base (DN)"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
@@ -181,21 +181,24 @@ namespace Zitac.AD.Steps
                 {
                     foreach (SearchParameters CurrParameter in ParametersList)
                     {
-                        if (CurrParameter.DataType == "Date")
+                        if (!new[] { "Exists", "DoesNotExist" }.Contains(CurrParameter.MatchCriteria))
                         {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), CurrParameter.Alias));
-                        }
-                        else if (CurrParameter.DataType == "Int32")
-                        {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int32)), CurrParameter.Alias));
-                        }
-                        else if (CurrParameter.DataType == "Int64")
-                        {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int64)), CurrParameter.Alias));
-                        }
-                        else
-                        {
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter.Alias));
+                            if (CurrParameter.DataType == "Date")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(DateTime)), CurrParameter.Alias));
+                            }
+                            else if (CurrParameter.DataType == "Int32")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int32)), CurrParameter.Alias));
+                            }
+                            else if (CurrParameter.DataType == "Int64")
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Int64)), CurrParameter.Alias));
+                            }
+                            else
+                            {
+                                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), CurrParameter.Alias));
+                            }
                         }
                     }
                 }
@@ -235,10 +238,12 @@ namespace Zitac.AD.Steps
             SearchParameters[] ParametersList = this.GetSearchParameters();
             if (ParametersList != null && ParametersList.Length != 0)
             {
-                if (CombineFiltersUsingAnd) {
+                if (CombineFiltersUsingAnd)
+                {
                     Filter = "(&";
                 }
-                else {
+                else
+                {
                     Filter = "(|";
                 }
                 foreach (SearchParameters CurrParameter in ParametersList)
@@ -320,15 +325,15 @@ namespace Zitac.AD.Steps
                 }
                 Filter += ")";
             }
-                if (PasswordNeverExpires != null || AccountEnabled != null)
-                {
-                    Filter = "(&" + Filter;
-                    if (PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
-                    if (PasswordNeverExpires == false) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))"; }
-                    if (AccountEnabled == true) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=2))"; }
-                    if (AccountEnabled == false) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=2)"; }
-                    Filter += ")";
-                }
+            if (PasswordNeverExpires != null || AccountEnabled != null)
+            {
+                Filter = "(&" + Filter;
+                if (PasswordNeverExpires == true) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=65536)"; }
+                if (PasswordNeverExpires == false) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=65536))"; }
+                if (AccountEnabled == true) { Filter += "(!(userAccountControl:1.2.840.113556.1.4.803:=2))"; }
+                if (AccountEnabled == false) { Filter += "(userAccountControl:1.2.840.113556.1.4.803:=2)"; }
+                Filter += ")";
+            }
 
             Credentials ADCredentials = new Credentials();
 
@@ -365,10 +370,12 @@ namespace Zitac.AD.Steps
 
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = string.Empty;
-                if(String.IsNullOrEmpty(BaseSearch)) {
+                if (String.IsNullOrEmpty(BaseSearch))
+                {
                     BaseDN = LDAPHelper.GetBaseDN(connection);
                 }
-                else {
+                else
+                {
                     BaseDN = BaseSearch;
                 }
                 List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, Scope, Filter, BaseAttributeList).ToList();
