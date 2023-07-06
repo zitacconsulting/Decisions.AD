@@ -103,7 +103,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Group Name"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Group Name or DN"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
                 return dataDescriptionList.ToArray();
@@ -130,7 +130,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string GroupName = data.Data["Group Name"] as string;
+            string GroupName = data.Data["Group Name or DN"] as string;
             int? Port = (int?)data.Data["Port"];
             List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
 
@@ -179,6 +179,9 @@ namespace Zitac.AD.Steps
                 else if (ShowOutcomeforNoResults)
                 {
                     return new ResultData("No Results");
+                }
+                                else {
+                    throw new Exception(string.Format("Unable to find group with name or DN: '{0}' in the AD", (object)GroupName));
                 }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();

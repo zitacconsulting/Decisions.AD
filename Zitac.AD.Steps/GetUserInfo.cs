@@ -178,6 +178,9 @@ namespace Zitac.AD.Steps
                 {
                     return new ResultData("No Results");
                 }
+                else {
+                    throw new Exception(string.Format("Unable to find user with name or DN: '{0}' in the AD", (object)UserName));
+                }
 
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();

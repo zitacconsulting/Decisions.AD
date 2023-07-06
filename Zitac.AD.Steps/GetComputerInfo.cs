@@ -15,7 +15,7 @@ namespace Zitac.AD.Steps
     [Writable]
     public class GetComputerInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
-     
+
         [WritableValue]
         private bool integratedAuthentication;
 
@@ -67,11 +67,11 @@ namespace Zitac.AD.Steps
             }
         }
 
-        [PropertyClassification(1, "Show Outcome for No Results", new string[] {"Outcomes"})]
+        [PropertyClassification(1, "Show Outcome for No Results", new string[] { "Outcomes" })]
         public bool ShowOutcomeforNoResults
         {
-            get {return showOutcomeforNoResults; }
-            set 
+            get { return showOutcomeforNoResults; }
+            set
             {
                 showOutcomeforNoResults = value;
                 this.OnPropertyChanged("OutcomeScenarios");
@@ -89,36 +89,40 @@ namespace Zitac.AD.Steps
                 return inputMappingArray;
             }
         }
-            public DataDescription[] InputData
+        public DataDescription[] InputData
+        {
+            get
             {
-                    get {
-                        
-                        List<DataDescription> dataDescriptionList = new List<DataDescription>();
-                            if(!IntegratedAuthentication)
-                            {
-                                dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (Credentials)), "Credentials"));
-                            }
-                            
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "AD Server"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Computer Name"));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
-                            dataDescriptionList.Add(new DataDescription((DecisionsType) new DecisionsNativeType(typeof (string)), "Additional Attributes", true, true, true));
-                            return dataDescriptionList.ToArray();                                              
-                        }
-            }
-    
-            public override OutcomeScenarioData[] OutcomeScenarios {
-                get {
-                    List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
-                    
-                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result",false)));
-                    if (ShowOutcomeforNoResults) {
-                        outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
-                    }
-                    outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
-                    return outcomeScenarioDataList.ToArray();
+
+                List<DataDescription> dataDescriptionList = new List<DataDescription>();
+                if (!IntegratedAuthentication)
+                {
+                    dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(Credentials)), "Credentials"));
                 }
+
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Computer Name"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
+                return dataDescriptionList.ToArray();
             }
+        }
+
+        public override OutcomeScenarioData[] OutcomeScenarios
+        {
+            get
+            {
+                List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
+
+                outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result", false)));
+                if (ShowOutcomeforNoResults)
+                {
+                    outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
+                }
+                outcomeScenarioDataList.Add(new OutcomeScenarioData("Error", new DataDescription(typeof(string), "Error Message")));
+                return outcomeScenarioDataList.ToArray();
+            }
+        }
 
         public ResultData Run(StepStartData data)
         {
@@ -130,11 +134,11 @@ namespace Zitac.AD.Steps
 
             Credentials ADCredentials = new Credentials();
 
-            if(IntegratedAuthentication)
+            if (IntegratedAuthentication)
             {
                 ADCredentials.Username = null;
                 ADCredentials.Password = null;
-                  
+
             }
             else
             {
@@ -172,10 +176,14 @@ namespace Zitac.AD.Steps
                 {
                     return new ResultData("No Results");
                 }
+                else
+                {
+                    throw new Exception(string.Format("Unable to find computer with name or DN: '{0}' in the AD", (object)ComputerName));
+                }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Result", (object) FoundComputer);
-                return new ResultData("Done", (IDictionary<string, object>) dictionary);
+                dictionary.Add("Result", (object)FoundComputer);
+                return new ResultData("Done", (IDictionary<string, object>)dictionary);
 
 
 
@@ -183,7 +191,7 @@ namespace Zitac.AD.Steps
             catch (Exception e)
             {
                 string ExceptionMessage = e.ToString();
-                return new ResultData("Error", (IDictionary<string, object>) new Dictionary<string, object>()
+                return new ResultData("Error", (IDictionary<string, object>)new Dictionary<string, object>()
                 {
                 {
                     "Error Message",
