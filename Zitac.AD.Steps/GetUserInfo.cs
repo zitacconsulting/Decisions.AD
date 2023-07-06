@@ -102,7 +102,7 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "User Name"));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Username or DN"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port",false, true, false));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
                 return dataDescriptionList.ToArray();
@@ -129,7 +129,7 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string UserName = data.Data["User Name"] as string;
+            string UserName = data.Data["Username or DN"] as string;
             int? Port = (int?)data.Data["Port"];
             List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
 
