@@ -125,7 +125,14 @@ namespace Zitac.AD.Steps
 
         public static DirectoryAttributeModification CreateAttributeModification(StepStartData data, AttributeValues Attribute) {
                 
-                if (data.Data[Attribute.Parameter] != null && (data.Data[Attribute.Parameter]).ToString().Length != 0)
+                if (data.Data[Attribute.Parameter] != null && data.Data[Attribute.Parameter].GetType().ToString() == "System.DateTime")
+                {
+                    DirectoryAttributeModification AttributeModification =  new DirectoryAttributeModification { Operation = DirectoryAttributeOperation.Replace, Name = Attribute.Attribute };
+                    AttributeModification.Add(Convert.ToString(((DateTime)data.Data["Account Expires"]).ToFileTimeUtc()));
+                    
+                    return AttributeModification;
+                }
+                else if (data.Data[Attribute.Parameter] != null && (data.Data[Attribute.Parameter]).ToString().Length != 0)
                 {
                     DirectoryAttributeModification AttributeModification =  new DirectoryAttributeModification { Operation = DirectoryAttributeOperation.Replace, Name = Attribute.Attribute };
                     AttributeModification.Add((string)data.Data[Attribute.Parameter]);
