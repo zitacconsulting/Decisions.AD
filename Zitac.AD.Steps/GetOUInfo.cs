@@ -1,19 +1,19 @@
 using DecisionsFramework.Design.Flow;
 using DecisionsFramework.Design.Properties;
 using DecisionsFramework.Design.ConfigurationStorage.Attributes;
+using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 using System;
 using System.Collections.Generic;
 using System.DirectoryServices.Protocols;
 using System.Linq;
 using DecisionsFramework.Design.Flow.Mapping;
 using DecisionsFramework.Design.Flow.CoreSteps;
-using DecisionsFramework.Design.Flow.Mapping.InputImpl;
 
 namespace Zitac.AD.Steps
 {
-    [AutoRegisterStep("Get Computer Info", "Integration", "Active Directory", "Zitac", "Computer")]
+    [AutoRegisterStep("Get OU Info", "Integration", "Active Directory", "Zitac", "OU")]
     [Writable]
-    public class GetComputerInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
+    public class GetOUInfo : BaseFlowAwareStep, ISyncStep, IDataConsumer, IDataProducer, IDefaultInputMappingStep //, INotifyPropertyChanged
     {
 
         [WritableValue]
@@ -83,12 +83,13 @@ namespace Zitac.AD.Steps
         {
             get
             {
-                IInputMapping[] inputMappingArray = new IInputMapping[2];
+                IInputMapping[] inputMappingArray = new IInputMapping[3];
                 inputMappingArray[0] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Additional Attributes" };
                 inputMappingArray[1] = (IInputMapping)new IgnoreInputMapping() { InputDataName = "Port" };
                 return inputMappingArray;
             }
         }
+
         public DataDescription[] InputData
         {
             get
@@ -101,8 +102,8 @@ namespace Zitac.AD.Steps
                 }
 
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "AD Server"));
-                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Computer Name Or DN"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(int?)), "Port", false, true, false));
+                dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "OU DN"));
                 dataDescriptionList.Add(new DataDescription((DecisionsType)new DecisionsNativeType(typeof(string)), "Additional Attributes", true, true, true));
                 return dataDescriptionList.ToArray();
             }
@@ -114,7 +115,7 @@ namespace Zitac.AD.Steps
             {
                 List<OutcomeScenarioData> outcomeScenarioDataList = new List<OutcomeScenarioData>();
 
-                outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(Computer), "Result", false)));
+                outcomeScenarioDataList.Add(new OutcomeScenarioData("Done", new DataDescription(typeof(OrganizationalUnit), "OU", false)));
                 if (ShowOutcomeforNoResults)
                 {
                     outcomeScenarioDataList.Add(new OutcomeScenarioData("No Results"));
@@ -128,8 +129,8 @@ namespace Zitac.AD.Steps
         {
             Dictionary<string, object> resultData = new Dictionary<string, object>();
             string ADServer = data.Data["AD Server"] as string;
-            string ComputerName = data.Data["Computer Name Or DN"] as string;
             int? Port = (int?)data.Data["Port"];
+            string OUDN = data.Data["OU DN"] as string;
             List<string> AdditionalAttributes = (data.Data["Additional Attributes"] as string[])?.ToList();
 
             Credentials ADCredentials = new Credentials();
@@ -146,7 +147,7 @@ namespace Zitac.AD.Steps
                 ADCredentials = InputCredentials;
             }
 
-            List<string> BaseAttributeList = Computer.ComputerAttributes;
+            List<string> BaseAttributeList = OrganizationalUnit.OUAttributes;
 
             if (AdditionalAttributes != null)
             {
@@ -157,20 +158,25 @@ namespace Zitac.AD.Steps
                 AdditionalAttributes = new List<string>();
             }
 
-            var Filter = "(&(objectClass=computer)(|(cn=" + ComputerName + ")(distinguishedname=" + ComputerName + ")))";
-
+            var Filter = "(&(objectClass=organizationalUnit)(distinguishedname="+ OUDN +"))";
             try
             {
                 IntegrationOptions Options = new IntegrationOptions(ADServer, Port, ADCredentials, UseSSL, IgnoreInvalidCert, IntegratedAuthentication);
 
+
                 LdapConnection connection = LDAPHelper.GenerateLDAPConnection(Options);
                 string BaseDN = LDAPHelper.GetBaseDN(connection);
+
                 List<SearchResultEntry> Results = LDAPHelper.GetPagedLDAPResults(connection, BaseDN, SearchScope.Subtree, Filter, BaseAttributeList).ToList();
 
-                Computer FoundComputer = new Computer();
+                OrganizationalUnit FoundOrganizationalUnit = new OrganizationalUnit();
+
                 if (Results != null && Results.Count != 0)
                 {
-                    FoundComputer = new Computer(Results[0], AdditionalAttributes);
+                    foreach (SearchResultEntry OrganizationalUnit in Results)
+                    {
+                        FoundOrganizationalUnit = new OrganizationalUnit(Results[0], AdditionalAttributes);
+                    }
                 }
                 else if (ShowOutcomeforNoResults)
                 {
@@ -178,14 +184,12 @@ namespace Zitac.AD.Steps
                 }
                 else
                 {
-                    throw new Exception(string.Format("Unable to find computer with name or DN: '{0}' in the AD", (object)ComputerName));
+                    throw new Exception(string.Format("Unable to find OU with DN: '{0}' in the AD", (object)OUDN));
                 }
 
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                dictionary.Add("Result", (object)FoundComputer);
+                dictionary.Add("OU", (object)FoundOrganizationalUnit);
                 return new ResultData("Done", (IDictionary<string, object>)dictionary);
-
-
 
             }
             catch (Exception e)
