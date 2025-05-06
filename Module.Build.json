@@ -14,7 +14,7 @@
         "ObjectsToImport": null,
         "MsSqlScript": null
     },
-    "Version": "9.4.0",
+    "Version": "9.7.0",
     "ImagePath": "zitac.svg",
     "Description": "Custom Active Directory Steps built by Zitac"
 }

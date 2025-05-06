@@ -34,6 +34,9 @@ namespace Zitac.AD.Steps
         [WritableValue]
         private bool requireUppercase;
 
+        private readonly string allowedSpecialChars = "!@#$%&*()-_=+";
+
+
 
         [PropertyClassification(10, "Required Length", new string[] { "Options" })]
         public Int32 RequiredLength
@@ -69,7 +72,7 @@ namespace Zitac.AD.Steps
                 onlyOneNonLetterOrDigit = value;
             }
         }
-    
+
 
         [PropertyClassification(1, "Require Digit", new string[] { "Options" })]
         public bool RequireDigit
@@ -119,38 +122,48 @@ namespace Zitac.AD.Steps
             List<char> RequiredChars = new List<char>();
 
             if (RequireNonLetterOrDigit)
-                RequiredChars.Add((char)random.Next(33, 48));
+            {
+                // Use a random character from our allowed special characters
+                int randomIndex = random.Next(0, allowedSpecialChars.Length);
+                RequiredChars.Add(allowedSpecialChars[randomIndex]);
+            }
             if (RequireDigit)
                 RequiredChars.Add((char)random.Next(48, 58));
             if (RequireLowercase)
                 RequiredChars.Add((char)random.Next(97, 123));
             if (RequireUppercase)
                 RequiredChars.Add((char)random.Next(65, 91));
-            
+
 
 
             while (password.Length < (RequiredLength))
             {
-                if ((RequiredLength - password.Length) <= RequiredChars.Count && RequiredChars.Count != 0 ) {
-                    var ToAdd = random.Next(0,(RequiredChars.Count));
+                if ((RequiredLength - password.Length) <= RequiredChars.Count && RequiredChars.Count != 0)
+                {
+                    var ToAdd = random.Next(0, (RequiredChars.Count));
                     password.Append(RequiredChars.ElementAt(ToAdd));
                     RequiredChars.RemoveAt(ToAdd);
                 }
-                else if ((random.Next(2) == 1) && RequiredChars.Count != 0 ){
-                    var ToAdd = random.Next(0,(RequiredChars.Count));
+                else if ((random.Next(2) == 1) && RequiredChars.Count != 0)
+                {
+                    var ToAdd = random.Next(0, (RequiredChars.Count));
                     password.Append(RequiredChars.ElementAt(ToAdd));
                     RequiredChars.RemoveAt(ToAdd);
                 }
-                else {
+                else
+                {
                     int CharRandom;
-                    if (OnlyOneNonLetterOrDigit){
-                        CharRandom = random.Next(0,3);
+                    if (OnlyOneNonLetterOrDigit)
+                    {
+                        CharRandom = random.Next(0, 3);
                     }
-                    else {
-                        CharRandom = random.Next(0,4);
+                    else
+                    {
+                        CharRandom = random.Next(0, 4);
                     }
 
-                    switch(CharRandom) {
+                    switch (CharRandom)
+                    {
                         case 0:
                             // Digit
                             password.Append((char)random.Next(48, 58));
@@ -164,9 +177,10 @@ namespace Zitac.AD.Steps
                             password.Append((char)random.Next(65, 91));
                             break;
                         case 3:
-                            // NonLetterOrDigit
-                            password.Append((char)random.Next(33, 47));
-                            break;                                                    
+                            // NonLetterOrDigit - use our allowed special characters
+                            int randomIndex = random.Next(0, allowedSpecialChars.Length);
+                            password.Append(allowedSpecialChars[randomIndex]);
+                            break;
                     }
                 }
 
