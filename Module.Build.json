@@ -4,7 +4,9 @@
         "CoreServicesDlls": [
             "./Zitac.AD.Steps/bin/Zitac.AD.dll"
         ],
-        "CustomImages": null,
+        "CustomImages": [
+            "zitac.svg"
+        ],
         "CliDlls": null,
         "WebPages": null,
         "SilverlightDlls": null,
